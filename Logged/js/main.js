@@ -208,6 +208,9 @@
       predicter.click()
 
       }
+    }else{
+      storeInfo('statec','today')
+      tod.click()
     }
     
   
@@ -385,7 +388,6 @@
           let area= document.getElementById('contentArea')
           area.style.flexDirection='column'
 
-            extract4()
             updatecontent4()
 
        

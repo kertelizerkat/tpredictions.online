@@ -4,6 +4,10 @@ let steps_to_remove_loader = 0
 let state__p = ''
 let extact3_no=0
 let product4_no=0
+let liveMatchesFetchBusy = false
+let liveMatchPollTimer = null
+let liveSlipsFetchBusy = false
+let liveSlipPollTimer = null
 let pieChart=null;
 let lineChart=null;
 let lineChart2=null;
@@ -346,9 +350,10 @@ function extract4(){
           header.className = "slip-header";
           header.innerHTML = `${slipIcon} Betslip #${parseInt(slipId)}`;
           slipWrapper.appendChild(header);
-          let totalOdds = 0;
+          let totalOdds = 1;
           Object.entries(slipMatches).forEach(([id, data]) => {
-            totalOdds = totalOdds+  data.odds;
+            const legOdds = Number(data.odds);
+            if (Number.isFinite(legOdds) && legOdds > 0) totalOdds *= legOdds;
            
             let predictedOutcome = "";
             if (data.prediction_ && data.prediction_.toLowerCase().includes("win")) predictedOutcome = "win";
@@ -444,143 +449,56 @@ function extract4(){
         tab.classList.add('active');
       }
       document.getElementById('tab-pending').onclick = function() {
+        storeInfo('activeSlipCategory', 'pending');
         setActiveTab(this);
         renderSlips('pending');
       };
       document.getElementById('tab-won').onclick = function() {
+        storeInfo('activeSlipCategory', 'won');
         setActiveTab(this);
         renderSlips('won');
       };
       document.getElementById('tab-lost').onclick = function() {
+        storeInfo('activeSlipCategory', 'lost');
         setActiveTab(this);
         renderSlips('lost');
       };
       document.getElementById('tab-completed').onclick = function() {
+        storeInfo('activeSlipCategory', 'completed');
         setActiveTab(this);
         renderSlips('completed');
       };
-      setActiveTab(document.getElementById('tab-pending'));
-      renderSlips('pending');
+      const activeCategory = accessInfo('activeSlipCategory') || 'pending';
+      const activeButton = document.getElementById(`tab-${activeCategory}`) || document.getElementById('tab-pending');
+      setActiveTab(activeButton);
+      renderSlips(activeCategory);
     
 }
 
 
 function updatecontent4() {
-
-
-  if (!(localStorage.getItem('continueoff')=='allow') ) {
-    if (!(localStorage.getItem('continueoff')=='allow') ) {
-
-
-      // location.reload(false)
-      let count_ = 0
-      let state__int4 = setInterval(() => {
-
-        count_ = count_ + 1
-        let do_;
-        let st = accessInfo('late4')
-        if (count_ == 1) {
-          do_ = true
-          storeInfo('late4', null)
-          // console.log('Requesting')
-
-        }
-
-        if (st == 'done') {
-          if (count_ == 1) {
-            do_ = true
-            storeInfo('late4', null)
-
-
-          } else {
-            do_ = false
-
-
-            clearInterval(state__int4)
-          }
-
-        } else {
-          if (st == 'failed') {
-            do_ = true
-            storeInfo('late4', null)
-            count_ = 0
-            // console.log('Retrying..')
-
-
-          } else {
-            if (st == 'busy') {
-              // console.log('Busy..')
-              do_ = false
-            } else {
-              do_ = true
-            }
-          }
-        }
-        if (!(localStorage.getItem('continueoff')=='allow')) {
-
-          if (do_) {
-            if (steps_to_remove_loader == 1) {
-              if(!(localStorage.getItem('continueoff')=='allow')){
-                if (!(localStorage.getItem('continueoff')=='allow') ){
-                       product4()
-                }else{
-                 if (product4_no==0){
-            extract4()
-            product4_no=1
-      }
-                  clearInterval(state__int4)
-
-                }
-              }
-            } else {
-              console.log('validation has not taken place..')
-            }
-          }
-
-
-
-        }else{
-          if (product4_no==0){
-            extract4()
-            product4_no=1
-      }
-          clearInterval(state__int4)
-
-        }
-
-
-      }, 16000)
-
-
-
-
-
-
-    }else{
-      if (product4_no==0){
-            extract4()
-            product4_no=1
-      }
-      
-    }
-  }else{
-
-    if (product4_no==0){
-            extract4()
-            product4_no=1
-      }
-    
+  if (!document.getElementById('betslip-container')) return;
+  extract4();
+  product4();
+  if (liveSlipPollTimer === null) {
+    liveSlipPollTimer = setInterval(() => {
+      if (!document.hidden && document.getElementById('betslip-container')) product4();
+    }, 8000);
   }
 }
 
 function product4(){
+      if (liveSlipsFetchBusy) return;
+      liveSlipsFetchBusy = true;
       fetch(line+'/betslips_', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify('slips')
+      body: JSON.stringify('slips'),
+      cache: 'no-store'
     })
     .then(response => response.json())
     .then(data4 => {
+      const requestedCategory = accessInfo('activeSlipCategory') || 'pending';
       const matches = data4.slips;
 
          storeInfo('late4', 'done')
@@ -657,9 +575,10 @@ function product4(){
           header.className = "slip-header";
           header.innerHTML = `${slipIcon} Betslip #${parseInt(slipId)}`;
           slipWrapper.appendChild(header);
-          let totalOdds = 0;
+          let totalOdds = 1;
           Object.entries(slipMatches).forEach(([id, data]) => {
-            totalOdds = totalOdds+  data.odds;
+            const legOdds = Number(data.odds);
+            if (Number.isFinite(legOdds) && legOdds > 0) totalOdds *= legOdds;
            
             let predictedOutcome = "";
             if (data.prediction_ && data.prediction_.toLowerCase().includes("win")) predictedOutcome = "win";
@@ -755,27 +674,34 @@ function product4(){
         tab.classList.add('active');
       }
       document.getElementById('tab-pending').onclick = function() {
+        storeInfo('activeSlipCategory', 'pending');
         setActiveTab(this);
         renderSlips('pending');
       };
       document.getElementById('tab-won').onclick = function() {
+        storeInfo('activeSlipCategory', 'won');
         setActiveTab(this);
         renderSlips('won');
       };
       document.getElementById('tab-lost').onclick = function() {
+        storeInfo('activeSlipCategory', 'lost');
         setActiveTab(this);
         renderSlips('lost');
       };
       document.getElementById('tab-completed').onclick = function() {
+        storeInfo('activeSlipCategory', 'completed');
         setActiveTab(this);
         renderSlips('completed');
       };
-      setActiveTab(document.getElementById('tab-pending'));
-      renderSlips('pending');
+      const activeButton = document.getElementById(`tab-${requestedCategory}`) || document.getElementById('tab-pending');
+      setActiveTab(activeButton);
+      renderSlips(requestedCategory);
     })
     .catch(error => {
-      storeInfo('late2', 'failed')
-    });}
+      storeInfo('late4', 'failed')
+    })
+    .finally(() => { liveSlipsFetchBusy = false; });
+}
 
 
 function retrieveSum2() {
@@ -1886,10 +1812,12 @@ function message993() {
 };
 
 
-function getproducts2() {
-  storeInfo('late', 'busy')
+function getproducts2(silent = false) {
+  if (liveMatchesFetchBusy) return;
+  liveMatchesFetchBusy = true;
+  if (!silent) storeInfo('late', 'busy')
   let loader888=document.querySelector('.loader88')
-  if (loader888){
+  if (loader888 && !silent){
     loader888.setAttribute('style','border:3px solid #007BFF;border-top-color: transparent;')
  
   
@@ -1902,17 +1830,32 @@ function getproducts2() {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ message: 'Logged' })
+    body: JSON.stringify({ message: 'Logged' }),
+    cache: 'no-store'
   })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) throw new Error(`Live data request failed (${response.status})`);
+      return response.json();
+    })
     .then(data => {
+      const sourceUpdatedAt = Number(data.updated_at) || Date.now() / 1000;
+      storeInfo('live_updated_at', sourceUpdatedAt);
+      let liveStatus = document.getElementById('live-update-status');
+      const productsGrid = document.querySelector('.products-grid');
+      if (!liveStatus && productsGrid && productsGrid.parentElement) {
+        liveStatus = document.createElement('div');
+        liveStatus.id = 'live-update-status';
+        liveStatus.className = 'mb-2 text-xs text-slate-500';
+        productsGrid.parentElement.insertBefore(liveStatus, productsGrid);
+      }
+      if (liveStatus) {
+        liveStatus.textContent = `Live data refreshed ${new Date(sourceUpdatedAt * 1000).toLocaleTimeString()}`;
+      }
       if (true) {
         if (data.message) {
 
 
 
-          console.log(data.message)
-          //    alert('data recieved')
           let cards_data = data.message
           if (cards_data == '<span id="red">You did not login!</span>') {
             logout()
@@ -2649,7 +2592,8 @@ function getproducts2() {
 
 
 
-    });
+    })
+    .finally(() => { liveMatchesFetchBusy = false; });
 }
 function getproducts2_() {
   storeInfo('late7', 'busy')
@@ -3844,118 +3788,19 @@ function getChartConfig2(dark, dtas, c) {
 
 
 function updatecontent() {
-  // console.log(statec)
+  const activeTab = accessInfo('statec') || 'today';
+  if (activeTab !== 'today') return false;
 
-  if (statec == 'today') {
-    if (document.querySelector('.products-grid')) {
-
-
-      // location.reload(false)
-      let count_ = 0
-      let state__int = setInterval(() => {
-
-        count_ = count_ + 1
-        let do_;
-        let st = accessInfo('late')
-        if (count_ == 1) {
-          do_ = true
-          storeInfo('late', null)
-          // console.log('Requesting')
-
-        }
-
-        if (st == 'done') {
-          if (count_ == 1) {
-            do_ = true
-            storeInfo('late', null)
-
-
-          } else {
-            do_ = false
-            clearInterval(state__int)
-          }
-
-        } else {
-          if (st == 'failed') {
-            do_ = true
-            storeInfo('late', null)
-            count_ = 0
-            // console.log('Retrying..')
-
-
-          } else {
-            if (st == 'busy') {
-              // console.log('Busy..')
-              do_ = false
-            } else {
-              do_ = true
-            }
-          }
-        }
-        if (document.querySelector('.products-grid')) {
-          if (!(localStorage.getItem('continueoff')=='allow')) {
-            if (do_) {
-              if (!(localStorage.getItem('continueoff')=='allow')) {
-                console.log('requested content')
-                if (!(localStorage.getItem('continueoff')=='allow')){
-                  getproducts2()
-                }else{
-                  let loader88=document.querySelector('.loader88')
-                      if (loader88){
-                        loader88.style.display= 'none'
-                      }
-
-                  retrieveSum2()
-                  
-                  clearInterval(state__int)
-                  
-                }
-                
-              }else{
-                let loader88=document.querySelector('.loader88')
-                      if (loader88){
-                        loader88.style.display= 'none'
-                      }
-
-                  retrieveSum2()
-                  
-                  clearInterval(state__int)
-              }
-            }
-
-
-          }else{
-            let loader88=document.querySelector('.loader88')
-          if (loader88){
-            loader88.style.display= 'none'
-          }
-          retrieveSum2()
-                  
-          clearInterval(state__int)
-           
- 
-          }
-        } else {
-           let loader88=document.querySelector('.loader88')
-          if (loader88){
-            loader88.style.display= 'none'
-          } 
-          clearInterval(state__int)
-        }
-
-      }, 9000)
-
-
-
-
-
-
-    } else {
-      return false
-    }
-  } else {
-    return false
+  if (document.querySelector('.products-grid')) getproducts2(false);
+  if (liveMatchPollTimer === null) {
+    liveMatchPollTimer = setInterval(() => {
+      const currentTab = accessInfo('statec') || 'today';
+      if (!document.hidden && currentTab === 'today' && document.querySelector('.products-grid')) {
+        getproducts2(true);
+      }
+    }, 8000);
   }
+  return true;
 }
 
 
