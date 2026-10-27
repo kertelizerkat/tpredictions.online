@@ -43,12 +43,25 @@
           </div>
           
           <div>
+            <section class="predictor-progress" id="predictor-progress" aria-live="polite" hidden>
+              <div class="predictor-progress-heading">
+                <span class="predictor-progress-orbit" aria-hidden="true"><span></span></span>
+                <div class="predictor-progress-copy">
+                  <h3 id="predictor-progress-stage">Getting started</h3>
+                  <p id="predictor-progress-detail">Preparing your match search.</p>
+                </div>
+                <strong class="predictor-progress-percent" id="predictor-progress-percent">0%</strong>
+              </div>
+              <div class="predictor-progress-track" role="progressbar" aria-label="Prediction progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="predictor-progress-fill" id="predictor-progress-fill"></div>
+              </div>
+              <div class="predictor-progress-meta">
+                <span id="predictor-progress-source">Saved match data</span>
+                <span id="predictor-progress-count">Waiting for the first update</span>
+                <span id="predictor-progress-remaining"></span>
+              </div>
+            </section>
             <div class="output"></div>
-            <div class="progress-container hide">
-        <div class="progress-bar" id="progress-bar">50%</div>
-    </div>
-    <div class="progress-label hide">Progress: <span id="progress-text">50%</span></div>
-    
           </div>
         </div>
       </div>`
@@ -138,11 +151,34 @@
     </h1>
     <div class="flex justify-center mb-8 gap-2 flex-wrap">
       <button id="tab-pending" class="tab-btn px-5 py-2 rounded-t-lg font-semibold text-slate-700 bg-transparent shadow-none transition-all duration-300 focus:outline-none border-b-2 border-transparent relative">Pending</button>
+      <button id="tab-unresolved" class="tab-btn px-5 py-2 rounded-t-lg font-semibold text-slate-700 bg-transparent shadow-none transition-all duration-300 focus:outline-none border-b-2 border-transparent relative">Missing data <span class="tab-count">0</span></button>
       <button id="tab-won" class="tab-btn px-5 py-2 rounded-t-lg font-semibold text-slate-700 bg-transparent shadow-none transition-all duration-300 focus:outline-none border-b-2 border-transparent relative">Won</button>
       <button id="tab-lost" class="tab-btn px-5 py-2 rounded-t-lg font-semibold text-slate-700 bg-transparent shadow-none transition-all duration-300 focus:outline-none border-b-2 border-transparent relative">Lost</button>
       <button id="tab-completed" class="tab-btn px-5 py-2 rounded-t-lg font-semibold text-slate-700 bg-transparent shadow-none transition-all duration-300 focus:outline-none border-b-2 border-transparent relative">Completed</button>
     </div>
+    <div class="betslip-filter-row" aria-label="Filter and sort bet slips">
+      <label class="betslip-filter-field">Match date from<input id="betslip-date-from" type="date" /></label>
+      <label class="betslip-filter-field">Match date to<input id="betslip-date-to" type="date" /></label>
+      <label class="betslip-filter-field betslip-sort-field">Sort slips<select id="betslip-sort">
+        <option value="newest">Newest slips</option>
+        <option value="oldest">Oldest slips</option>
+        <option value="most-active">Most active (live matches)</option>
+        <option value="most-outcomes">Most settled outcomes (pending first)</option>
+        <option value="most-matches">Most matches</option>
+      </select></label>
+      <button id="betslip-clear-filters" type="button" class="betslip-clear-filters">Clear date filters</button>
+    </div>
+    <p class="betslip-filter-hint">Date range and sorting work with the selected status tab above.</p>
+    <div class="betslip-search-row flex flex-wrap justify-center items-center gap-2 mb-4">
+      <input id="betslip-search" type="search" placeholder="Find a slip or match" class="px-3 py-2 rounded-lg border border-slate-300 text-slate-800" />
+      <button id="betslip-search-button" type="button" class="px-4 py-2 rounded-lg bg-blue-600 text-white">Find</button>
+    </div>
     <div id="betslip-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7 min-h-[300px] transition-all duration-500"></div>
+    <div class="flex justify-center items-center gap-4 mt-5">
+      <button id="betslip-prev" type="button" class="px-3 py-2 rounded-lg bg-slate-200 disabled:opacity-40">← Previous</button>
+      <span id="betslip-page-status" class="text-sm text-slate-600">Page 1 of 1 · 0 slips</span>
+      <button id="betslip-next" type="button" class="px-3 py-2 rounded-lg bg-slate-200 disabled:opacity-40">Next →</button>
+    </div>
   </div>
  
 </div>
@@ -183,12 +219,25 @@
           </div>
           
           <div>
+            <section class="predictor-progress" id="predictor-progress" aria-live="polite" hidden>
+              <div class="predictor-progress-heading">
+                <span class="predictor-progress-orbit" aria-hidden="true"><span></span></span>
+                <div class="predictor-progress-copy">
+                  <h3 id="predictor-progress-stage">Getting started</h3>
+                  <p id="predictor-progress-detail">Preparing your match search.</p>
+                </div>
+                <strong class="predictor-progress-percent" id="predictor-progress-percent">0%</strong>
+              </div>
+              <div class="predictor-progress-track" role="progressbar" aria-label="Prediction progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="predictor-progress-fill" id="predictor-progress-fill"></div>
+              </div>
+              <div class="predictor-progress-meta">
+                <span id="predictor-progress-source">Saved match data</span>
+                <span id="predictor-progress-count">Waiting for the first update</span>
+                <span id="predictor-progress-remaining"></span>
+              </div>
+            </section>
             <div class="output"></div>
-            <div class="progress-container hide">
-        <div class="progress-bar" id="progress-bar">50%</div>
-    </div>
-    <div class="progress-label hide">Progress: <span id="progress-text">50%</span></div>
-    
           </div>
         </div>
       </div>`
@@ -417,285 +466,177 @@
     }
     
     function predict() {
+  const queryInput = document.getElementById('input');
+  const button = document.querySelector('.btn33');
+  const output = document.querySelector('.output');
+  const content = document.getElementById('contentArea');
+  const holder = document.querySelector('.holder');
+  const progressPanel = document.getElementById('predictor-progress');
+  const requestMode = main_state;
+  const query = requestMode === 'premium' ? 'premium' : String(queryInput && queryInput.value || '').trim();
 
+  if (!query || !button || !output || !progressPanel) return;
 
-  let qry = document.getElementById("input");
-  
-  let btn = document.querySelector('.btn33');
-  let cencon = document.getElementById("cencon");
-  let out = document.querySelector(".output");
-  let cont= document.getElementById('contentArea')
-  if (true){
-   
-  }
-  
-    
+  let endpoint = '';
+  if (requestMode === 'wining_matches') endpoint = line + '/receive_message';
+  else if (requestMode === 'individual_matches') endpoint = line + '/individual_receive_message';
+  else if (requestMode === 'premium') endpoint = line + '/premium';
+  if (!endpoint) return;
 
-    
-    cont.classList.add('shiningBG')
-  
+  const taskId = window.crypto && typeof window.crypto.randomUUID === 'function'
+    ? window.crypto.randomUUID()
+    : `predict_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  const previousButtonText = button.textContent;
+  const source = requestMode === 'wining_matches'
+    ? 'Saved tournament and match summaries'
+    : requestMode === 'premium'
+      ? 'Saved tournament report'
+      : 'Stored team form and match-history records';
+  let progressRequestActive = false;
+  let progressFinished = false;
+  let progressTimer = null;
 
-  let holder = document.querySelector(".holder");
+  const renderProgress = (data) => {
+    const value = Math.max(0, Math.min(100, Number(data.progress) || 0));
+    const stage = document.getElementById('predictor-progress-stage');
+    const detail = document.getElementById('predictor-progress-detail');
+    const percent = document.getElementById('predictor-progress-percent');
+    const fill = document.getElementById('predictor-progress-fill');
+    const sourceText = document.getElementById('predictor-progress-source');
+    const countText = document.getElementById('predictor-progress-count');
+    const remainingText = document.getElementById('predictor-progress-remaining');
+    const track = progressPanel.querySelector('[role="progressbar"]');
 
-  let bordero = out.style.border;
-  let inno = out.innerHTML;
-   if (main_state == "premium") {
-    qry.value='premium'
-   }
+    progressPanel.hidden = false;
+    progressPanel.classList.toggle('is-complete', data.status === 'complete');
+    progressPanel.classList.toggle('is-error', data.status === 'error');
+    if (stage) stage.textContent = data.stage || 'Working on your request';
+    if (detail) detail.textContent = data.detail || 'Checking the saved match data.';
+    if (percent) percent.textContent = `${value}%`;
+    if (fill) fill.style.width = `${value}%`;
+    if (track) track.setAttribute('aria-valuenow', String(value));
+    if (sourceText) sourceText.textContent = data.source || source;
 
-  
-
-  
-
-if (qry.value ) {
-    // qry.setAttribute("placeholder","e.g. " + qry.value)
-    // qry.value="";
-    // out.innerHTML=''
-    let ocikon=cencon.innerHTML
-    cont.classList.remove('shiningBG')
-    let color = btn.style.color;
-    let text = btn.textContent;
-    let bgcolor = btn.style.backgroundColor;
-    let animation = btn.style.animationName
-    btn.textContent = "Loading";
-    
-    if (localStorage.getItem("theme_+-----")=='Dark'){
-
-       btn.style.backgroundColor = "transparent";
-       btn.style.color = "#fff"
+    const processed = Number(data.processed);
+    const total = Number(data.total);
+    const hasCounts = data.processed !== null && data.processed !== undefined
+      && data.total !== null && data.total !== undefined
+      && Number.isFinite(processed) && Number.isFinite(total) && total >= 0;
+    const found = Number(data.found);
+    const hasFound = data.found !== null && data.found !== undefined && Number.isFinite(found);
+    if (countText) {
+      if (hasCounts) {
+        countText.textContent = `${processed.toLocaleString()} of ${total.toLocaleString()} checked`;
+      } else if (hasFound) {
+        countText.textContent = `${found.toLocaleString()} matches found`;
+      } else {
+        countText.textContent = data.status === 'complete' ? 'All checks finished' : 'Checking the saved data';
+      }
+      if (hasCounts && hasFound) countText.textContent += ` · ${found.toLocaleString()} found`;
     }
-else{
-         btn.style.backgroundColor = "#FFFFFF";
-          btn.style.color = "#000"
+    if (remainingText) {
+      remainingText.textContent = hasCounts
+        ? `${Math.max(0, Number(data.remaining ?? total - processed)).toLocaleString()} left`
+        : data.status === 'running' ? 'Counting items…' : '';
     }
-     
+    if (track) track.setAttribute('aria-valuetext', `${data.stage || 'Working'}: ${value}%`);
+  };
 
-    
-
-
-    
-
-    cencon.innerHTML= `  <div style='background-color: black;border-radius:40px;z-index:1000000' class="loading-container11">
-        <div class="title11">
-          <span style='font-size:x-large' class="letter11">P</span>
-          <span style='font-size:x-large' class="letter11">r</span>
-          <span style='font-size:x-large' class="letter11">o</span>
-          <span style='font-size:x-large' class="letter11">c</span>
-          <span style='font-size:x-large' class="letter11">e</span>
-          <span style='font-size:x-large' class="letter11">s</span>
-          <span style='font-size:x-large' class="letter11">s</span>
-          <span style='font-size:x-large' class="letter11">i</span>
-          <span style='font-size:x-large' class="letter11">n</span>
-          <span style='font-size:x-large' class="letter11">g...</span>
-       
-        </div>
-        <div class="loader11"></div>
-        <div id="username_loader11" class="subtitle11"></div>
-        <div id="state_loader11" class="subtitle11"></div>
-
-        <div class="checkbox-container11">
-          <!-- <div id="vdata" class="check-box  hide_bx11">Validation</div> -->
-          <!-- <div id="fdata__" class="check-box  hide_bx11">Fetching Data</div> -->
-          <!-- <div id="ldata" class="check-box  hide_bx11">Loading Data</div> -->
-        </div>
-        <div class="particles11">
-          <div class="particle11" style="left: 10%; animation-delay: 0s;"></div>
-          <div class="particle11" style="left: 25%; animation-delay: 0.8s;"></div>
-          <div class="particle11" style="left: 40%; animation-delay: 1.6s;"></div>
-          <div class="particle11" style="left: 60%; animation-delay: 2.4s;"></div>
-          <div class="particle11" style="left: 80%; animation-delay: 3.2s;"></div>
-          <div class="particle11" style="left: 95%; animation-delay: 4s;"></div>
-        </div>
-
-    </div>`+ cencon.innerHTML
-    cencon.style.position= 'relative'
-
-    
-    //holder
-    holder.classList.remove("flex")
-    //input border
-
-    out.style.border = bordero
-    out.innerHTML = inno
-  
-
-
-    let http;
-    
- 
-    
-    if (main_state == "wining_matches") {
-        http = line+ "/receive_message";
-
+  const refreshProgress = async () => {
+    if (progressRequestActive || progressFinished) return;
+    progressRequestActive = true;
+    try {
+      const progressUrl = `${String(line).replace(/\/+$/, '')}/predictor_progress/${encodeURIComponent(taskId)}`;
+      const response = await fetch(progressUrl, { method: 'GET', cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      renderProgress(data);
+      if (data.status === 'complete' || data.status === 'error') {
+        progressFinished = true;
+        if (progressTimer) clearInterval(progressTimer);
+      }
+    } catch (error) {
+      // Keep the prediction request running if an individual progress poll is missed.
+    } finally {
+      progressRequestActive = false;
     }
-    if (main_state == "individual_matches") {
-        http = line+"/individual_receive_message";
-    }
-    if (main_state == "premium") {
-        http = line+"/premium";
-        qry.value='premium'
-     
-    
-    }
-    console.log(http)
-    fetch(http, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(qry.value)
+  };
+
+  content.classList.remove('shiningBG');
+  if (holder) holder.classList.add('flex');
+  button.disabled = true;
+  button.textContent = 'Working…';
+  renderProgress({
+    status: 'running',
+    stage: requestMode === 'wining_matches'
+      ? 'Preparing your search'
+      : requestMode === 'premium' ? 'Opening the saved tournament report' : 'Finding both teams',
+    detail: requestMode === 'wining_matches'
+      ? 'Getting the saved match summaries ready to check.'
+      : requestMode === 'premium' ? 'Loading the latest prepared tournament report.'
+        : 'Searching stored team data for your match.',
+    progress: 1,
+    source
+  });
+  progressTimer = setInterval(refreshProgress, 650);
+  refreshProgress();
+
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, task_id: taskId })
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('The request could not be completed. Please try again.');
+      return response.json();
     })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("<span id='red'>Something went wrong, Please try again!</span>");
-
-
-
-            }
-       
-            //holder
-            holder.classList.add("flex")
-
-            //ceco
-         
-            cont.classList.remove('shiningBG')
-
-            // out.style.border="2px solid rgba(65,25,65)"
-            out.innerHTML = "<span id='green'>Loading (received) Content</span>"
-            return response.json();
-        })
-        .then(data => {
-            // console.log("data from server:", data)
-            if (main_state == "wining_matches") {
-                res = data.results;
-                if (res=='<span id="red">You did not login!</span>'){
-                  logout()
-                }
-            }
-            if (main_state == "individual_matches" || main_state == "premium") {
-                res = data.response;
-                if (res=='<span id="red">You did not login!</span>'){
-                  logout()
-                }
-
-            }
-
-
-            console.log(res)
-
-            holder.classList.add("flex")
-            out.innerHTML = res
-      
-            
-            cencon.innerHTML=ocikon
-            predicter_innerhtml=cont.innerHTML
-            scrollDown100px() 
-        })
-        .catch(error => {
-            console.log("something wrong with the response", error)
-            if (String(error) == "SyntaxError: Unexpected end of JSON input") {
-                error = "Content being updated in the server, please try again later!"
-            }
-
-             if (String(error)=="TypeError: Failed to fetch"){
-               out.innerHTML = `<span id='red' style='text-align:center'>👥: SORRY, WE ARE OFFLINE !!!<br>Please try again later.</span>`
-
-
-            }else{
-               out.innerHTML = `<span id='red'>${error}</span>`
-
-
-            }
-           
-          
-       
-         
-             cencon.innerHTML=ocikon
-            holder.classList.add("flex");
-            
-            
-        });
-
-
-}
-
-}
- 
-function longRunningTask() {
-    console.log("Starting task...");
-    let pcon = document.querySelector('.progress-container');
-    let plabel = document.querySelector('.progress-label');
-    let ptext = document.getElementById('progress-text');
-    let pbar = document.getElementById('progress-bar');
-    let out2 = document.querySelector(".output");
-    pcon.classList.add('hide')
-    plabel.classList.add('hide')
-    ptext.textContent = "0" + '%'
-    pbar.textContent = "0" + '%'
-    pbar.style.width = "0" + '%'
-    
-    setTimeout(() => {
-        console.log("Task running...");
-
-        let value2=de(accessInfo(en('username',date1)),date1)
-        out2.innerHTML=''
-        let intervalID = setInterval(() => {
-
-            fetch(line +'/status', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(value2)
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error("<span id='red'>Something went wrong, Please try again!</span>");
-        
-        
-        
-                    }
-                   
-                
-                    return response.json();
-                })
-                .then(data => {
-                     
-                  pcon.classList.remove('hide')
-                  plabel.classList.remove('hide')
-                  ptext.textContent = data.progress + '%'
-                  pbar.textContent = data.progress + '%'
-                  pbar.style.width = data.progress + '%'
-                  if (data.progress=='100'){
-                    clearInterval(intervalID);
-                    pcon.classList.add('hide')
-                    plabel.classList.add('hide')
-                    ptext.textContent = '0%'
-                    pbar.textContent = '0%'
-                    pbar.style.width = '0%'
-                  }
-    
-    
-                })
-                .catch(error => {
-                    clearInterval(intervalID);
-                    pcon.classList.add('hide')
-                    plabel.classList.add('hide')
-                    ptext.textContent = '0%'
-                    pbar.textContent = '0%'
-                    pbar.style.width = '0%'
-                    
-                   
-            
-                });
-         
-        }
-        
-        ,   8000);
-
-       
-        
-    }, 4000); // Runs after 2 seconds, but doesn’t block execution
-
-    console.log("Function call ended, but task is still running.");
+    .then(data => {
+      const result = requestMode === 'wining_matches' ? data.results : data.response;
+      if (typeof result !== 'string') throw new Error('The server returned an empty report. Please try again.');
+      if (/you did not login|account not verified|please log out and in/i.test(result)) {
+        logout();
+        return;
+      }
+      output.innerHTML = result;
+      const resultCount = requestMode === 'wining_matches'
+        ? (result.match(/class=["']results["']/g) || []).length
+        : undefined;
+      renderProgress({
+        status: 'complete',
+        stage: 'Report ready',
+        detail: requestMode === 'wining_matches'
+          ? `${resultCount.toLocaleString()} matching fixture${resultCount === 1 ? '' : 's'} found.`
+          : requestMode === 'premium'
+            ? result.includes('No prepared tournament report')
+              ? 'There is no prepared tournament report to show right now.'
+              : 'The saved tournament report is ready to view.'
+            : result.includes('No results found')
+              ? 'No matching team records were found.'
+              : 'Your team comparison is ready.',
+        progress: 100,
+        found: resultCount,
+        source
+      });
+      predicter_innerhtml = content.innerHTML;
+      scrollDown100px();
+    })
+    .catch(error => {
+      output.textContent = error && error.message === 'Failed to fetch'
+        ? 'The service could not be reached. Please try again in a moment.'
+        : (error.message || 'The request could not be completed.');
+      renderProgress({
+        status: 'error',
+        stage: 'Could not finish this search',
+        detail: error.message || 'Please check your connection and try again.',
+        progress: 100,
+        source
+      });
+      progressFinished = true;
+    })
+    .finally(() => {
+      if (progressTimer) clearInterval(progressTimer);
+      button.disabled = false;
+      button.textContent = previousButtonText || (requestMode === 'premium' ? 'Initiate' : 'Submit');
+      predicter_innerhtml = content.innerHTML;
+    });
 }

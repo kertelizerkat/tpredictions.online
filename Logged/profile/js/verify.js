@@ -11,6 +11,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     let web= accessInfo(en('website',date1))
     let loc= accessInfo(en('address',date1))
     let logged= accessInfo(en('logged',date1))
+    const hasLocalProfileFields = Boolean(bio || web || loc)
     if (pasw && phone && usern && email && logged=='true'){
         
         if (!(pstate=='cost' || pstate=='login' || pstate=='verify' || pstate=='register' || pstate=='BTS'|| pstate=="logged")){window.location.assign('../logged')};
@@ -19,9 +20,9 @@ window.addEventListener('DOMContentLoaded',()=>{
          phone=de(phone,date1)
          usern=de(usern,date1)
          email= de(email,date1)
-         bio= de(bio,date1)
-         web= de(web,date1)
-         loc= de(loc,date1)
+         bio= bio ? de(bio,date1) : ''
+         web= web ? de(web,date1) : ''
+         loc= loc ? de(loc,date1) : ''
        
         let username= document.getElementById('username');
         let emailA= document.getElementById('email');
@@ -41,6 +42,73 @@ window.addEventListener('DOMContentLoaded',()=>{
         locA.textContent=loc
    
         lgname.textContent=usern
+
+    // The account record is authoritative so edits made on another device
+    // appear here even when this browser has an older local profile cache.
+    fetch(line + '/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ email, password: de(pasw, date1) })
+    })
+    .then(response => response.json().then(payload => {
+        if (!response.ok) throw new Error(payload.message || 'Profile could not be loaded.');
+        return payload;
+    }))
+    .then(payload => {
+        if (window.profileEditStarted) return;
+        const profile = payload.profile;
+        if (!profile) return;
+        if (profile.username) {
+            username.textContent = profile.username;
+            if (lgname) lgname.textContent = profile.username;
+        }
+        if (profile.has_profile) {
+            bioA.textContent = profile.bio || '';
+            locA.textContent = profile.address || '';
+            webA.textContent = profile.website || '';
+            const websiteText = String(profile.website || '').trim();
+            const websiteUrl = /^https?:\/\//i.test(websiteText) ? websiteText : (websiteText ? `https://${websiteText}` : '');
+            try {
+                const parsed = websiteUrl ? new URL(websiteUrl) : null;
+                webA.href = parsed && ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '#';
+                webA.target = webA.href === '#' ? '' : '_blank';
+                webA.rel = 'noopener noreferrer';
+            } catch (_) { webA.href = '#'; webA.removeAttribute('target'); }
+        } else if (hasLocalProfileFields) {
+            // Migrate profiles previously saved only in this browser so the
+            // same profile is available from other devices and future sessions.
+            fetch(line + '/saveP', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store',
+                body: JSON.stringify({
+                    username: profile.username || usern,
+                    bio: bio || '',
+                    address: loc || '',
+                    website: web || '',
+                    email,
+                    password: de(pasw, date1),
+                })
+            }).then(response => response.json().then(result => {
+                if (!response.ok || result.message !== 'Saving Passed!') {
+                    throw new Error(result.message || 'Existing profile could not be synced.');
+                }
+            })).catch(error => console.warn('Could not migrate the local profile to the account server:', error));
+        }
+        try {
+            if (profile.username) storeInfo(en('username', date1), en(profile.username, date1));
+            if (profile.has_profile) {
+                storeInfo(en('bio', date1), en(profile.bio || '', date1));
+                storeInfo(en('website', date1), en(profile.website || '', date1));
+                storeInfo(en('address', date1), en(profile.address || '', date1));
+            }
+        } catch (error) {
+            console.warn('Profile loaded from the server; local cache could not encode all characters.', error);
+        }
+    })
+    .catch(error => console.warn('Could not sync profile from the account server:', error));
+
     const emailC=email
     if (emailC){
         // alert(emailC)

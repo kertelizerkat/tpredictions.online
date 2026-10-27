@@ -9,20 +9,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TPREDICTIONS | Dashboard</title>
   <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20261027-betslip-filters-v1">
 
   <script>
     
 
     if (localStorage.getItem("theme_+-----") == 'Light') {
       const stylesheet = document.querySelector("link");
-      stylesheet.href = 'css/styles2.css'
+      stylesheet.href = 'css/styles2.css?v=20261027-betslip-filters-v1'
 
     }
   </script>
 
 
-  <script src="js/mod.js"></script>
+  <script src="js/mod.js?v=20261027-betslip-filters-v1"></script>
   <script src="../js/allhandler.js"></script>
 
   <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon">
@@ -202,15 +202,14 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
       <p></p>
     </section>
 
-
-
+    <div id="live-update-status" class="live-update-status" role="status" aria-live="polite"></div>
 
     <!-- Main container holding all prediction cards -->
     <div class="container22 ">
       <div class="header">
-        <div id="today" class="active" onclick="switchContent('today')">Sys Predictions <br><span
+        <div id="today" class="active" onclick="switchContent('today')">Predictions <br><span
             class="loader88"></span></div>
-        <div id="analysis" onclick="switchContent('analysis')">Sys Bets</div>
+        <div id="analysis" onclick="switchContent('analysis')">Bets</div>
 
         <div id="predicter" onclick="switchContent('predicter')">Predicter</div>
       </div>
@@ -331,10 +330,18 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
     </div>
 
 
+          <div class="performance-mode" role="tablist" aria-label="Performance data source">
+            <button id="performance-mode-simulated" class="performance-mode-button" type="button"
+              role="tab" aria-selected="true" onclick="switchPerformanceDataset('simulated')">Simulated</button>
+            <button id="performance-mode-real" class="performance-mode-button" type="button"
+              role="tab" aria-selected="false" onclick="switchPerformanceDataset('real')">Real-life</button>
+            <span id="performance-mode-note" class="performance-mode-note">Simulated results</span>
+          </div>
+
           <!-- Summary Cards -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             <div class="p-4 rounded-xl shadow bg-white dark:bg-gray-800 dark:text-gray-100">
-              <h2 class="text-xl font-semibold">Total Matches</h2>
+              <h2 id="total-matches-label" class="text-xl font-semibold">Total Matches</h2>
               <p id="total-matches" class="text-2xl">0</p>
             </div>
             <div class="p-4 rounded-xl shadow bg-white dark:bg-gray-800 dark:text-gray-100">
@@ -388,7 +395,7 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
           <!-- Matches Table -->
           <!-- <h2 class="text-2xl font-bold mb-4"></h2> -->
           <div class="overflow-x-auto  htables">
-            <table class="min-w-full text-sm text-left border-collapse">
+            <table id="match-table-source" hidden class="min-w-full text-sm text-left border-collapse">
               <thead class="bg-gray-200 dark:bg-gray-700">
                 <tr>
                   <th class="px-4 py-2 border">Match</th>
@@ -477,7 +484,7 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
   </footer>
   </div>
   <script src="js/verify.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/main.js?v=20261027-betslip-filters-v1"></script>
   
 
   <script>
@@ -502,35 +509,8 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
 
  <script>
   function transfere(text_,ActionElement){
-    function bop(){
-      if (localStorage.getItem('theme_+-----')=="Dark"){
-        return "Light"
-      }else{
-        return "Dark"
-      }
-    }
- let number= Math.round(Math.random()*10) 
-  
- console.log(number)
- if ( number>4){
- number= number-4
- }
- 
- if ( number>4){
- number= number-4
- }
-
-
-
-
- if ( number>4){
-  return False
- }else{
-      document.addEventListener("click",()=>{
-          noti.click()
-        })
- 
-  let valuesl=["Predicter","Sys Bets","Theme","Bio","Address"]
+    const valuesl=["Predicter","Sys Bets","Bio","Address"]
+    const choice=valuesl[Math.floor(Math.random()*valuesl.length)]
 
    let valuesd={
       "Predicter":{
@@ -548,13 +528,6 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
 
       },
 
-      "Theme":{
-       "text":  `👤: Want to change to ${bop()} theme?` ,
-       "href": `${getHomePath()}/theme.html`,
-       "link" : "/theme",
-       "onclick":false,
-        "reason": false
-      },
       "Bio":{
         "text": " 👤: Update Your Bio !!",
         "href": `${getHomePath()}/Logged/profile/index.html`,
@@ -575,7 +548,6 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
 
     }
 
-    let choice= valuesl[number]
     ActionElement.textContent= valuesd[choice]['link']
     ActionElement.style.textDecoration="underline"
     ActionElement.style.cursor="pointer"
@@ -593,10 +565,6 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
          window.location.assign(valuesd[choice]['href'])
 
       })
-        
-      }
-     
-      
     }
     if (valuesd[choice]['onclick']){
       ActionElement.setAttribute("onclick",valuesd[choice]['onclick'])

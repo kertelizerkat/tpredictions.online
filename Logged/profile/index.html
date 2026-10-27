@@ -306,144 +306,130 @@
     .edit:hover{
       background-color: rgba(0,0,255,0.1);
     }
+    #profile-save-status{font-size:.82rem;min-height:1.2em;margin-left:.35rem}
+    #profile-save-status.profile-save-pending{color:#a16207}
+    #profile-save-status.profile-save-success{color:#15803d}
+    #profile-save-status.profile-save-error{color:#b91c1c}
+    .pbtn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+    .pbtn:disabled{opacity:.6;cursor:wait}
   </style>
   <div class="edit-save-btn">
-    <div id="edit" class="edit pbtn">Edit</div>
-    <div id="save" class="save pbtn">Save</div>
+    <button id="edit" class="edit pbtn" type="button">Edit profile</button>
+    <button id="save" class="save pbtn" type="button">Save profile</button>
+    <span id="profile-save-status" role="status" aria-live="polite"></span>
   </div>
  <script>
-  let edit= document.getElementById('edit')
-  let save= document.getElementById('save')
-  let name= document.getElementById('username')
-  let bio= document.getElementById('bio')
-  let website= document.getElementById('website')
-  let loc= document.getElementById('Location_')
-  function make_editable(e){
-     if (localStorage.getItem("theme_+-----")=='Dark'){
-       e.style.border="1px solid white";
-    
+  const editButton = document.getElementById('edit');
+  const saveButton = document.getElementById('save');
+  const saveStatus = document.getElementById('profile-save-status');
+  const profileFields = {
+    username: document.getElementById('username'),
+    bio: document.getElementById('bio'),
+    address: document.getElementById('Location_'),
+    website: document.getElementById('website'),
+  };
 
-     }else{
-      e.style.border="1px solid #0056b3";
-  
-     }
-  e.style.borderRadius="4px"
-  e.style.padding="4px"
-  e.setAttribute("contenteditable","true")
-
-   
-
+  function setProfileEditable(editable) {
+    Object.values(profileFields).forEach(field => {
+      field.contentEditable = editable ? 'true' : 'false';
+      if (editable) {
+        field.style.border = localStorage.getItem('theme_+-----') === 'Dark' ? '1px solid white' : '1px solid #0056b3';
+        field.style.borderRadius = '4px';
+        field.style.padding = '4px';
+      } else {
+        field.style.removeProperty('border');
+        field.style.removeProperty('border-radius');
+        field.style.removeProperty('padding');
+      }
+    });
+    editButton.hidden = editable;
+    saveButton.hidden = !editable;
+    editButton.style.display = editable ? 'none' : 'inline-flex';
+    saveButton.style.display = editable ? 'inline-flex' : 'none';
   }
-  function unmake_editable(e){
-    e.setAttribute("style",'')
-    e.setAttribute("contenteditable","")
 
+  function setWebsiteLink(value) {
+    const website = profileFields.website;
+    const text = String(value || '').trim();
+    website.textContent = text;
+    try {
+      const candidate = /^https?:\/\//i.test(text) ? text : (text ? `https://${text}` : '');
+      const parsed = candidate ? new URL(candidate) : null;
+      website.href = parsed && ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '#';
+      website.target = website.href === '#' ? '' : '_blank';
+      website.rel = 'noopener noreferrer';
+    } catch (_) {
+      website.href = '#';
+      website.removeAttribute('target');
+    }
   }
-  edit.addEventListener("click",()=>{
-    edit.style.display="none";
-    save.style.display="unset"
-    make_editable(name)
-    make_editable(bio)
-    make_editable(loc)
-    make_editable(website)
 
-    
+  function cacheProfile(profile) {
+    try {
+      storeInfo(en('username', date1), en(profile.username, date1));
+      storeInfo(en('bio', date1), en(profile.bio || '', date1));
+      storeInfo(en('website', date1), en(profile.website || '', date1));
+      storeInfo(en('address', date1), en(profile.address || '', date1));
+    } catch (error) {
+      // The server copy remains authoritative if a local cipher cannot encode a character.
+      console.warn('Profile saved on the server; local cache could not encode all characters.', error);
+    }
+  }
 
-  })
-  save.addEventListener('click',()=>{
-    let sname=name.textContent
-    let sbio=bio.textContent
-    let sloc=loc.textContent
-    let swebsite=website.textContent
-    let kd=[sname,sbio,sloc,swebsite]
-    let password=de(accessInfo(en('password',date1)),date1)
-    let email=de(accessInfo(en('email',date1)),date1)
+  editButton.addEventListener('click', () => {
+    window.profileEditStarted = true;
+    saveStatus.textContent = '';
+    setProfileEditable(true);
+    profileFields.username.focus();
+  });
 
-    let data9={ data: `${sname}(@)${sloc}(@)${sbio}(@)${swebsite}(@)${password}(@)${email}(@)` }
-    sendFormData(data9,kd)
-    unmake_editable(bio)
-    unmake_editable(loc)
-    unmake_editable(website)
-    unmake_editable(name)
-    edit.setAttribute('style',"")
-    save.setAttribute('style',"")
-    
-    
+  saveButton.addEventListener('click', async () => {
+    const encryptedPassword = accessInfo(en('password', date1));
+    const encryptedEmail = accessInfo(en('email', date1));
+    const password = encryptedPassword ? de(encryptedPassword, date1) : '';
+    const email = encryptedEmail ? de(encryptedEmail, date1) : '';
+    const profile = {
+      username: profileFields.username.textContent.trim(),
+      bio: profileFields.bio.textContent.trim(),
+      address: profileFields.address.textContent.trim(),
+      website: profileFields.website.textContent.trim(),
+      password,
+      email,
+    };
+    saveButton.disabled = true;
+    saveStatus.textContent = 'Saving profile…';
+    saveStatus.className = 'profile-save-pending';
+    try {
+      const response = await fetch(line + '/saveP', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify(profile),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.message !== 'Saving Passed!') {
+        throw new Error(result.message || 'Profile could not be saved.');
+      }
+      const saved = result.profile || profile;
+      profileFields.username.textContent = saved.username;
+      profileFields.bio.textContent = saved.bio || '';
+      profileFields.address.textContent = saved.address || '';
+      setWebsiteLink(saved.website || '');
+      const logoName = document.querySelector('.logo_name');
+      if (logoName) logoName.textContent = saved.username;
+      cacheProfile(saved);
+      setProfileEditable(false);
+      saveStatus.textContent = 'Profile saved.';
+      saveStatus.className = 'profile-save-success';
+    } catch (error) {
+      saveStatus.textContent = error.message || 'Profile could not be saved. Please try again.';
+      saveStatus.className = 'profile-save-error';
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
 
-function sendFormData(data,kd) {
-    // Send data to Flask application using fetch
-
-    const http = line + "/saveP";
-     fetch(http, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data)
-    })
-        .then(response => {
-
-            if (!response.ok) 
-                { throw new Error("Something went wrong, Please try again!");
-                    
-                } 
-                
-                return response.json();
-
-        })
-        .then(data => {
-            console.log("Data from server:", data);
-            if (data['message'] == 'Saving Passed!') {
-              storeInfo(en('username',date1),en(kd[0],17))
-               storeInfo(en('bio',date1),en(kd[1],17))
-              storeInfo(en('website',date1),en(kd[3],17))
-              storeInfo(en('address',date1),en(kd[2],17))
-              // alert("saved!!")
-              window.location.reload()
-             
-                
-        
-                
-                
-            } else {
-              
-                // if (data['reason']=="EXemail"){
-                //   alert('Verification Failed')
-                
-
-                // }
-                // if (data['reason']=="email"){
-            
-                // }
-            
-                // if (data['reason']=="password"){
-                //   alert('Verification Failed')
-               
-
-                // }
-                
-                alert("Failed")
-                
-            
-
-             
-            }
-
-
-        })
-        .catch(error => {
-            console.log("Something went wrong with the response", error);
-            
-         
-
-        });
-
-    // return "passed"// Prevent form from submitting the traditional way n Incorrect2007@
-}
-
-
-    
-  })
+  setProfileEditable(false);
  </script>
       
 
@@ -571,7 +557,7 @@ function sendFormData(data,kd) {
     </footer>
   </div>
 
-  <script src="js/verify.js"></script>
+  <script src="js/verify.js?v=20261026-profile-sync"></script>
   <script>
   
   </script>
