@@ -3104,7 +3104,7 @@ function switchPerformanceDataset(dataset) {
   if (realButton) realButton.setAttribute('aria-selected', String(activePerformanceDataset === 'real'));
   if (note) note.textContent = activePerformanceDataset === 'real'
     ? 'Predictions are saved once; accuracy includes settled matches only.'
-    : 'Simulated results';
+    : 'Historical walk-forward backtest (earlier dates only)';
   if (totalLabel) totalLabel.textContent = activePerformanceDataset === 'real'
     ? 'Predictions Recorded' : 'Total Matches';
   getproducts_2_3(true, activePerformanceDataset);
