@@ -349,8 +349,8 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
               <p id="accuracy" class="text-2xl">0%</p>
             </div>
             <div class="p-4 rounded-xl shadow bg-white dark:bg-gray-800 dark:text-gray-100">
-              <h2 class="text-xl font-semibold">Average PRC</h2>
-              <p id="avg-confidence" class="text-2xl">0%</p>
+              <h2 class="text-xl font-semibold" title="Probability estimated by the team-data predictor and used as a KNN input">Average source probability</h2>
+              <p id="avg-source-probability" class="text-2xl">0%</p>
             </div>
           </div>
 
@@ -365,7 +365,7 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
 
             
 
-            <!-- Line Chart for Win vs Loss (Prediction Percentage over Matches) -->
+            <!-- Line Chart for Win vs Loss (source probability over matches) -->
             <div class="relative w-full h-64 md:h-80 lg:h-96">
               <canvas id="lineChart"></canvas>
             </div>
