@@ -69,7 +69,7 @@ function clearPerformanceView(message = '') {
       host.appendChild(status);
     }
   }
-  for (const id of ['total-matches', 'accuracy', 'avg-confidence']) {
+  for (const id of ['total-matches', 'accuracy', 'avg-source-probability']) {
     const element = document.getElementById(id);
     if (element) element.textContent = '—';
   }
@@ -385,15 +385,15 @@ refreshBtn3.style.opacity='0.5'
       });
       summary.settledMatches = settledMatches.length;
       summary.correctCount = settledMatches.filter(outcomeIsCorrect).length;
-      const confidenceValues = allMatches
+      const sourceProbabilityValues = allMatches
         .map(match => match && match.prediction_p)
         .filter(value => value !== null && value !== undefined && value !== '')
         .map(Number)
         .filter(Number.isFinite);
-      if (confidenceValues.length) {
-        summary.avgConfidence = confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length;
+      if (sourceProbabilityValues.length) {
+        summary.avgSourceProbability = sourceProbabilityValues.reduce((sum, value) => sum + value, 0) / sourceProbabilityValues.length;
       } else {
-        summary.avgConfidence = 0;
+        summary.avgSourceProbability = 0;
       }
       if (summary.histdata_ && typeof summary.histdata_ === 'object') {
         const history = summary.histdata_;
@@ -426,9 +426,9 @@ refreshBtn3.style.opacity='0.5'
 
       const totalMatches = Math.floor(allMatches.length);
       const correctCount = Number(summary.correctCount) || 0;
-      const avgConfidence = Number(summary.avgConfidence) || 0;
+      const avgSourceProbability = Number(summary.avgSourceProbability) || 0;
 
-      const safeAvgConfidence = Number.isFinite(avgConfidence) ? avgConfidence : 0;
+      const safeAvgConfidence = Number.isFinite(avgSourceProbability) ? avgSourceProbability : 0;
       //remove the loader
 
 
@@ -443,7 +443,7 @@ refreshBtn3.style.opacity='0.5'
       // Animate summary counters over 2000ms.
       animateNumber("total-matches", 0, totalMatches, 6000);
       animateNumber("accuracy", 0, settledMatches.length ? (correctCount / settledMatches.length) * 100 : 0, 10000, '%');
-      animateNumber("avg-confidence", 0, safeAvgConfidence, 10000, '%');
+      animateNumber("avg-source-probability", 0, safeAvgConfidence, 10000, '%');
 
       const finalPieData = Array.isArray(summary.finalPieData) ? summary.finalPieData : [0, 0, 0, 0, 0];
 
@@ -478,7 +478,7 @@ refreshBtn3.style.opacity='0.5'
         pieChart.update();
         return pieFrame >= totalPieFrames;
       }, 50, renderEpoch);
-      //  const summaryData = { finalPieData, allMatches, avgConfidence,correctCount, totalMatches,winMatches,lossMatches,finalWinData,finalLossData};
+      //  const summaryData = { finalPieData, allMatches, avgSourceProbability,correctCount, totalMatches,winMatches,lossMatches,finalWinData,finalLossData};
       // --- Line Chart Animation ---
       // Extract the win and loss datasets.
       const winMatches = Array.isArray(summary.winMatches) ? summary.winMatches : [];
@@ -524,7 +524,7 @@ refreshBtn3.style.opacity='0.5'
               ticks: { stepSize: 1 }
             },
             y: {
-              title: { display: true, text: 'Prediction Percentage (%)' }
+              title: { display: true, text: 'Source probability (%)' }
             }
           }
         }
@@ -1495,7 +1495,7 @@ function renderMatchCard(category, key, matchData) {
       <div class="font-semibold text-lg mb-3">${match}</div>
         <div class="space-y-1">
          <p><span class="font-medium">Prediction:</span> ${prediction}</p>
-        <p><span class="font-medium">Prediction %:</span> ${prediction_p}</p>
+        <p><span class="font-medium">Source probability:</span> ${prediction_p}%</p>
         <p><span class="font-medium">Score Match :</span> ${real_score}</p>
         <p><span class="font-medium">Actual Result:</span> ${actualResults}</p>
         </div>
@@ -2981,7 +2981,7 @@ function getChartConfig(dark) {
           },
           title: {
             display: true,
-            text: 'Prediction(%)',
+            text: 'Source probability (%)',
             color: dark ? '#eee' : '#333'
           }
         },
@@ -3043,7 +3043,7 @@ function getChartConfig2(dark, dtas, c) {
           },
           title: {
             display: true,
-            text: 'Prediction(%)',
+            text: 'Source probability (%)',
             color: dark ? '#eee' : '#333'
           }
         },
@@ -3191,13 +3191,13 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
           : 'No real-life predictions are recorded yet; new eligible predictions will be saved automatically.';
       }
       const correctCount = settledMatches.filter(outcomeIsCorrect).length;
-      const confidenceValues = allMatches
+      const sourceProbabilityValues = allMatches
         .map(match => match && match.prediction_p)
         .filter(value => value !== null && value !== undefined && value !== '')
         .map(Number)
         .filter(Number.isFinite);
-      const avgConfidence = confidenceValues.length
-        ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length
+      const avgSourceProbability = sourceProbabilityValues.length
+        ? sourceProbabilityValues.reduce((sum, value) => sum + value, 0) / sourceProbabilityValues.length
         : 0;
 
 
@@ -3217,7 +3217,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
       // Animate summary counters over 2000ms.
       animateNumber("total-matches", 0, totalMatches, 6000);
       animateNumber("accuracy", 0, settledMatches.length ? (correctCount / settledMatches.length) * 100 : 0, 10000, '%');
-      animateNumber("avg-confidence", 0, avgConfidence, 10000, '%');
+      animateNumber("avg-source-probability", 0, avgSourceProbability, 10000, '%');
 
       // --- Pie Chart Data Calculations ---
       // Draws:
@@ -3317,7 +3317,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
               ticks: { stepSize: 1 }
             },
             y: {
-              title: { display: true, text: 'Prediction Percentage (%)' }
+              title: { display: true, text: 'Source probability (%)' }
             }
           }
         }
@@ -3345,7 +3345,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
       const tbdinner = populatePerformanceTable(tbody, tableMatches);
       
 
-      const summaryData = { dataset, finalPieData, allMatches, avgConfidence, correctCount, settledMatches: settledMatches.length, totalMatches, winMatches, lossMatches, finalWinData, finalLossData, tbdinner, histdata_ };
+      const summaryData = { dataset, finalPieData, allMatches, avgSourceProbability, correctCount, settledMatches: settledMatches.length, totalMatches, winMatches, lossMatches, finalWinData, finalLossData, tbdinner, histdata_ };
       localStorage.setItem(dataset === 'real' ? "realMatchSummary" : "matchSummary", JSON.stringify(summaryData));
       storeCurrentTime()
       steps_to_remove_loader = 2
