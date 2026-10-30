@@ -1,0 +1,3 @@
+[17244:20312:1028/161100.268:INFO:components\enterprise\browser\controller\chrome_browser_cloud_management_controller.cc:241] No machine level policy manager exists.
+229368 bytes written to file C:\Users\mathe\AppData\Local\Temp\dsh-preview\run-167787c8\empty-light-390.png
+[17244:13172:1028/161145.966:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 18404: Access is denied. (0x5)

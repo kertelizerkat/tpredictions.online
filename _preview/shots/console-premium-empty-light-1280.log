@@ -1,0 +1,15 @@
+[6788:9716:1028/160212.195:INFO:components\enterprise\browser\controller\chrome_browser_cloud_management_controller.cc:241] No machine level policy manager exists.
+[6788:18788:1028/160236.907:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:18788:1028/160237.216:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+613729 bytes written to file C:\Users\mathe\AppData\Local\Temp\dsh-preview\run-2d02022d\premium-empty-light-1280.png
+[6788:16668:1028/160237.632:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:21668:1028/160238.247:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:21668:1028/160239.160:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:9464:1028/160240.234:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:23776:1028/160241.334:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:23776:1028/160242.352:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:23776:1028/160243.370:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:23776:1028/160244.781:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:16668:1028/160245.813:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:6380:1028/160247.022:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)
+[6788:18788:1028/160248.108:ERROR:chrome\updater\ipc\update_service_dialer_win.cc:77] Failed to open named pipe server process 13700: Access is denied. (0x5)

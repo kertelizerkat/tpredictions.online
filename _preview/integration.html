@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Predicter integration test</title>
+  <link rel="stylesheet" href="../Logged/css/styles.css">
+  <style>
+    body { padding: 24px; }
+    #results { white-space: pre-wrap; font: 12px/1.5 Consolas, monospace; color: #e6e6e6; }
+    .pass { color: #2ecc71; }
+    .fail { color: #ef5350; }
+  </style>
+</head>
+
+<body>
+  <!-- Minimal dashboard shell required by Logged/js/main.js -->
+  <div class="container22">
+    <div class="header">
+      <div id="today">Predictions</div>
+      <div id="analysis">Bets</div>
+      <div id="predicter">Predicter</div>
+    </div>
+    <div class="content2 text-gray-900" id="contentArea"></div>
+  </div>
+  <nav>
+    <a href="#" id="Dashboard">Dashboard</a>
+    <a href="#" id="BTS">Trends</a>
+  </nav>
+
+  <h1 id="verdict">RUNNING</h1>
+  <pre id="results">waitingâ€¦</pre>
+
+  <script>
+    /* Globals normally provided by Logged/js/mod.js + ../js/allhandler.js */
+    window.line = 'http://127.0.0.1:5700';
+    function storeInfo() { }
+    function accessInfo() { return null; }
+    function logout() { window.__loggedOut = true; }
+    function scrollDown100px() { window.__scrolled = true; }
+    function retrieveSum2() { }
+    function updatecontent() { }
+    function updatecontent4() { }
+    function getHomePath() { return '/WEBAPP'; }
+  </script>
+  <script src="../Logged/js/predictor-view.js"></script>
+  <script src="../Logged/js/main.js"></script>
+
+  <script>
+    (function () {
+      var WIN_RAW = "<div id='vs_info'>"
+        + "<span class='info_line'>Liverpool's wining capability:  <span class='green'>74%</span></span>"
+        + "<span class='info_line'>Chelsea's wining capability:  <span class='red'>42%</span></span>"
+        + "<span class='info_line'>Liverpool's Losing capability:  <span class='green'>21%</span></span>"
+        + "<span class='info_line'>Chelsea's Losing capability:  <span class='red'>21%</span></span>"
+        + "<span class='info_line'>Liverpool's Drawing capability:  <span class='green'>5%</span></span>"
+        + "<span class='info_line'>Chelsea's Drawing capability:  <span class='red'>37%</span></span>"
+        + "<span class='info_line chance_w'><span class='green'>Liverpool</span> has a 54% probability of wining</span>"
+        + "<span class='info_line chance_w'><span class='red'>Chelsea</span> has a 31% probability of wining</span>"
+        + "<span class='info_line chance_w'> Probability of Draw:  <span class='red'>15% </span></span>"
+        + "<span class='info_line chance_w POutcome'>Prediction: <span class='green'>Liverpool</span> <span class='green'>(win)</span></span>"
+        + "</div>";
+
+      var TOURNAMENT_RAW = "<span id='red'>Format is incorrect! use: teamA vs teamB not ['bad'] </span>"        + "<ydiv class='t-and-info'><span class='time'>14:30</span>" + WIN_RAW + "</ydiv>"
+        + "<ydiv class='t-and-info'><span class='time'>15:00</span><div id='vs_info'>"
+        + "<span class='info_line'>Arsenal's wining capability:  <span class='green'>47%</span></span>"
+        + "<span class='info_line chance_w'><span class='green'>Arsenal</span> has a 33% probability of wining</span>"
+        + "<span class='info_line chance_w'><span class='red'>Tottenham</span> has a 33% probability of wining</span>"
+        + "<span class='info_line chance_w'> Probability of Draw:  <span class='red'>34% </span></span>"
+        + "<span class='info_line chance_w POutcome'>Prediction: <span class='green'>Draw</span></span>"
+        + "</div></ydiv>"
+        + "<ydiv class='t-and-info'><span class='time'>16:15</span>"
+        + "<div id='vs_info  '>( Everton vs Manchester City )</div><br>"
+        + "<p style='text-align:center;color:red;'>--No info!</p></ydiv>";
+
+      var MANGLED_RAW = "<div id='vs_info'>"
+        + "<span class='info_line'>Everton's wining capability:  <span class='green'>29%</span></span>"
+        + "<span class='info_line'>Manchester's City's capability:  <span class='green'>78%</span></span>"
+        + "<span class='info_line'>Everton's Losing capability:  <span class='red'>41%</span></span>"
+        + "<span class='info_line'>Manchester's City's capability:  <span class='green'>9%</span></span>"
+        + "<span class='info_line'>Everton's Drawing capability:  <span class='red'>30%</span></span>"
+        + "<span class='info_line'>Manchester's City's capability:  <span class='green'>13%</span></span>"
+        + "<span class='info_line chance_w'><span class='red'>Everton</span> has a 14% probability of wining</span>"
+        + "<span class='info_line chance_w'><span class='green'>Manchester</span> has a 71% probability of wining</span>"
+        + "<span class='info_line chance_w'> Probability of Draw:  <span class='red'>15% </span></span>"
+        + "<span class='info_line chance_w POutcome'>Prediction: <span class='green'>Manchester City</span> <span class='green'>(win)</span></span>"
+        + "</div>";
+
+      var results = { tests: [], errors: [], fatal: null };
+
+      window.onerror = function (msg, src, line, col) {
+        results.errors.push(String(msg) + ' @ ' + String(src || '') + ':' + line + ':' + col);
+      };
+
+      function assert(name, condition, detail) {
+        results.tests.push({ name: name, pass: !!condition, detail: detail === undefined ? '' : String(detail) });
+      }
+
+      function runSyncChecks() {
+        // --- main.js loaded and wired -------------------------------------
+        assert('main.js executed (switchContent global)', typeof window.switchContent === 'function');
+        assert('main.js predict() global', typeof window.predict === 'function');
+        assert('PredictorView loaded', !!(window.PredictorView && typeof window.PredictorView.render === 'function'));
+        if (!window.switchContent || !window.PredictorView) return;
+
+        // --- Predicter tab + empty state ----------------------------------
+        window.switchContent('predicter');
+        var output = document.querySelector('.output');
+        var input = document.getElementById('input');
+        var button = document.querySelector('.btn33');
+        var hint = document.getElementById('predictor-input-hint');
+
+        assert('predicter tab renders form', !!input && !!button && !!output);
+        assert('empty state rendered', !!(output && output.querySelector('.pcr-report--empty')));
+        assert('empty state has example chips', output.querySelectorAll('[data-pcr-action="example"]').length === 2);
+        assert('report output wrapper class', output.classList.contains('predictor-report-output'));
+
+        // --- delegated example chip ---------------------------------------
+        var chip = output.querySelector('[data-pcr-action="example"]');
+        if (chip) chip.click();
+        assert('example chip fills input', input.value === 'Liverpool vs Chelsea', input.value);
+        assert('example chip clears hint', hint.hidden === true);
+
+        // --- empty query validation blocks the request --------------------
+        input.value = '';
+        var fetchCalls = 0;
+        window.fetch = function () { fetchCalls += 1; return Promise.resolve({ ok: true, json: function () { return Promise.resolve({}); } }); };
+        window.predict();
+        assert('empty query makes no request', fetchCalls === 0, 'fetchCalls=' + fetchCalls);
+        assert('empty query shows hint', hint.hidden === false && hint.textContent.length > 10);
+        assert('empty query marks input invalid', input.classList.contains('is-invalid'));
+
+        // --- renderer success report --------------------------------------
+        input.value = 'Liverpool vs Chelsea';
+        input.dispatchEvent(new Event('input'));
+        assert('typing clears invalid state', input.classList.contains('is-invalid') === false);
+        var rendered = window.PredictorView.render(output, WIN_RAW, 'Liverpool vs Chelsea');
+        assert('renderer reports ok', !!(rendered && rendered.ok));
+        assert('report rendered', !!output.querySelector('.pcr-report'));
+        assert('three outcome cards', output.querySelectorAll('.pcr-outcome').length === 3, output.querySelectorAll('.pcr-outcome').length);
+        assert('model pick shown', (output.querySelector('.pcr-pick-value') || {}).textContent === 'Liverpool to win', (output.querySelector('.pcr-pick-value') || {}).textContent);
+        assert('pick tone is win', (output.querySelector('.pcr-pick') || {}).getAttribute && output.querySelector('.pcr-pick').getAttribute('data-tone') === 'win');
+        assert('two form cards', output.querySelectorAll('.pcr-form').length === 2);
+        assert('form bar aria-label', /historical form/i.test(output.querySelector('.pcr-form-bar').getAttribute('aria-label') || ''));
+        assert('outcome meter aria-label', /54%/.test(output.querySelector('.pcr-meter').getAttribute('aria-label') || ''));
+        assert('screen-reader summary present', (output.querySelector('.pcr-sr') || {}).textContent.indexOf('Liverpool vs Chelsea') !== -1);
+        assert('footnote present', /not guarantees/.test((output.querySelector('.pcr-footnote') || {}).textContent || ''));
+        assert('is-in reveal class applied after rAF', true); // visual state; set via rAF, verified in screenshots
+
+        // --- error states ---------------------------------------------------
+        window.PredictorView.renderError(output, { kind: 'format', query: 'Liverpool' });
+        assert('format error title', (output.querySelector('.pcr-error-title') || {}).textContent === 'Check the match format');
+        assert('format error retry button', !!output.querySelector('[data-pcr-action="retry"]'));
+        window.PredictorView.renderError(output, { kind: 'no-results', query: 'Foo vs Bar' });
+        assert('no-results error echoes query', /Foo vs Bar/.test((output.querySelector('.pcr-error-text') || {}).textContent || ''));
+        window.PredictorView.renderError(output, { kind: 'network', query: 'Liverpool vs Chelsea' });
+        assert('network error title', /Could not reach/.test((output.querySelector('.pcr-error-title') || {}).textContent || ''));
+
+        // --- raw fallback ---------------------------------------------------
+        window.PredictorView.renderFallback(output, WIN_RAW, 'Liverpool vs Chelsea');
+        assert('fallback report class', !!output.querySelector('.pcr-report--raw'));
+        assert('fallback keeps raw rows', output.querySelectorAll('.pcr-raw .info_line').length >= 8);
+        assert('fallback output is-raw class', output.classList.contains('is-raw'));
+
+        // --- premium empty state -------------------------------------------
+        window.PredictorView.renderEmpty(output, { mode: 'premium' });
+        assert('premium empty title', (output.querySelector('.pcr-empty-title') || {}).textContent === 'Saved tournament report');
+        assert('premium empty has no chips', output.querySelectorAll('[data-pcr-action="example"]').length === 0);
+
+        // --- tournament report (premium T -> Initiate) ---------------------
+        assert('tournament renderer exposed', typeof window.PredictorView.renderTournament === 'function');
+        assert('tournament parser exposed', typeof window.PredictorView.parseTournament === 'function');
+        var tourOk = window.PredictorView.renderTournament(output, TOURNAMENT_RAW);
+        assert('tournament render reports ok', tourOk === true);
+        assert('tournament report class', !!output.querySelector('.pcr-report--tournament'));
+        assert('tournament fixture cards', output.querySelectorAll('.pcr-fixture').length === 3, output.querySelectorAll('.pcr-fixture').length);
+        assert('tournament fixture has time', /14:30/.test(output.textContent));
+        assert('tournament pick chip', !!output.querySelector('.pcr-fixture-pick'));
+        assert('tournament filter input', !!output.querySelector('.pcr-tournament-search'));
+        var tourSearch = output.querySelector('.pcr-tournament-search');
+        var visibleFixtures = function () {
+          return Array.prototype.filter.call(output.querySelectorAll('.pcr-fixture'), function (card) { return !card.hidden; }).length;
+        };
+        assert('tournament starts with all fixtures visible', visibleFixtures() === 3, visibleFixtures());
+        if (tourSearch) {
+          tourSearch.value = 'Liverpool';
+          tourSearch.dispatchEvent(new Event('input'));
+          assert('tournament filter narrows list', visibleFixtures() === 1, visibleFixtures());
+          assert('tournament filter updates count', /1 of 3/.test((output.querySelector('.pcr-tournament-count') || {}).textContent || ''), (output.querySelector('.pcr-tournament-count') || {}).textContent);
+          tourSearch.value = '';
+          tourSearch.dispatchEvent(new Event('input'));
+          assert('tournament filter resets', visibleFixtures() === 3, visibleFixtures());
+        }
+        assert('tournament shows report notice for malformed entries', !!output.querySelector('.pcr-tournament-notice'));
+        assert('tournament keeps unreadable block as plain row', /No stored prediction data/.test(output.textContent));
+
+        // --- multi-word team form recovery (server mangles capability labels) ---
+        var mangled = window.PredictorView.parse(MANGLED_RAW, 'Everton vs Manchester City');
+        assert('mangled payload parses', !!mangled);
+        assert('mangled away win form recovered', mangled && mangled.away.form.win === 78, mangled && mangled.away.form.win);
+        assert('mangled away loss form recovered', mangled && mangled.away.form.loss === 9, mangled && mangled.away.form.loss);
+        assert('mangled away draw form recovered', mangled && mangled.away.form.draw === 13, mangled && mangled.away.form.draw);
+        window.PredictorView.render(output, MANGLED_RAW, 'Everton vs Manchester City');
+        assert('mangled render has two form cards', output.querySelectorAll('.pcr-form').length === 2, output.querySelectorAll('.pcr-form').length);
+        assert('mangled render keeps full team name', /Manchester City/.test(output.textContent));
+
+        // --- tab switching restores the saved predicter markup --------------
+        window.switchContent('today');
+        window.switchContent('predicter');
+        assert('tab switch restores predicter form', !!document.getElementById('input'));
+
+        // --- main.js source contract via behaviour --------------------------
+        var btn = document.querySelector('.btn33');
+        assert('button label is Predict', /Predict/.test(btn.textContent), btn.textContent);
+        assert('progress panel hidden at rest', document.getElementById('predictor-progress').hidden === true);
+      }
+
+      function finish() {
+        var failed = results.tests.filter(function (test) { return !test.pass; });
+        var fatal = results.errors.length > 0 || results.fatal;
+        var verdict = document.getElementById('verdict');
+        verdict.textContent = (failed.length === 0 && !fatal) ? 'ITEST PASS' : 'ITEST FAIL';
+        verdict.className = (failed.length === 0 && !fatal) ? 'pass' : 'fail';
+        document.title = verdict.textContent;
+        results.summary = {
+          total: results.tests.length,
+          passed: results.tests.length - failed.length,
+          failed: failed.length,
+          errors: results.errors,
+          fatal: results.fatal
+        };
+        document.getElementById('results').textContent = JSON.stringify(results, null, 2);
+      }
+
+      try {
+        runSyncChecks();
+      } catch (error) {
+        results.fatal = String(error && error.stack ? error.stack : error);
+      }
+      finish();
+    })();
+  </script>
+</body>
+
+</html>

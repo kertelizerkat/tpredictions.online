@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" class="pvr-noanim"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PVR ok: tournament report</title>
+  <link id="theme-css" rel="stylesheet" href="../Logged/css/styles.css">
+  <style>
+    /* Preview-only chrome. The real page uses the dashboard's own shell. */
+    body { min-height: 100vh; }
+    .pvr-bar { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .6rem .8rem; border-bottom: 1px solid #333; background: #111; color: #ddd; font: 12px/1.4 "Segoe UI", Arial, sans-serif; }
+    html.pvr-light .pvr-bar { border-color: #dbe4ef; background: #f4f7fb; color: #22303f; }
+    .pvr-bar button { padding: .3rem .55rem; border: 1px solid #555; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+    html.pvr-light .pvr-bar button { border-color: #b9c8d9; }
+    .pvr-bar button[aria-pressed="true"] { border-color: #007acc; color: #007acc; }
+    .pvr-bar .pvr-spacer { flex: 1 1 auto; }
+    .pvr-status { font-weight: 700; }
+    .pvr-status[data-level="error"] { color: #ef5350; }
+    .pvr-status[data-level="ok"] { color: #2ecc71; }
+    body.pvr-bare .pvr-bar { display: none; }
+    body.pvr-bare .container22 { margin-top: 24px; }
+    /* Screenshot mode: capture the settled state, not a reveal frame. */
+    html.pvr-noanim .pcr-report,
+    html.pvr-noanim .pcr-report *,
+    html.pvr-noanim .predictor-progress,
+    html.pvr-noanim .predictor-progress * {
+      animation: none !important;
+      transition: none !important;
+    }
+    /* Screenshot mode must show the settled meter widths even if rAF is
+       throttled in headless Chrome. */
+    html.pvr-noanim .pcr-meter-fill {
+      width: calc(var(--pcr-value, 0) * 1%) !important;
+    }
+  </style>
+</head>
+
+<body class="pvr-bare">
+  <div class="pvr-bar" id="pvr-bar">
+    <strong>Predicter preview</strong>
+    <span>·</span>
+    <button type="button" data-theme="dark" aria-pressed="true">Dark</button>
+    <button type="button" data-theme="light" aria-pressed="false">Light</button>
+    <span>·</span>
+    <button type="button" data-case="win" aria-pressed="false">Win</button>
+    <button type="button" data-case="draw" aria-pressed="false">Draw</button>
+    <button type="button" data-case="away" aria-pressed="false">Away</button>
+    <button type="button" data-case="unpredictable" aria-pressed="false">Unpredictable</button>
+    <button type="button" data-case="partial" aria-pressed="false">Partial</button>
+    <button type="button" data-case="mangled" aria-pressed="false">Mangled names</button>
+    <button type="button" data-case="empty" aria-pressed="false">Empty</button>
+    <button type="button" data-case="premium-empty" aria-pressed="false">Premium empty</button>
+    <button type="button" data-case="error" aria-pressed="false">Error</button>
+    <button type="button" data-case="format" aria-pressed="false">Format error</button>
+    <button type="button" data-case="noresults" aria-pressed="false">No results</button>
+    <button type="button" data-case="fallback" aria-pressed="false">Fallback</button>
+    <button type="button" data-case="loading" aria-pressed="false">Loading</button>
+    <button type="button" data-case="tournament" aria-pressed="true">Tournament</button>
+    <span class="pvr-spacer"></span>
+    <span id="pvr-status" class="pvr-status" data-level="ok">tournament report</span>
+  </div>
+
+  <main id="mainc-">
+    <div class="container22">
+      <div class="header">
+        <div id="today">Predictions</div>
+        <div id="analysis">Bets</div>
+        <div id="predicter" class="active">Predicter</div>
+      </div>
+      <div class="content2 text-gray-900" id="contentArea">
+        <div class="container33">
+          <div class="holder">
+            <div id="cencon" class="container-bts mode-premium">
+              <div class="form">
+                <div class="cap"><img style="height:50px;width:50px; border-radius: 50%;display: inline;" src="../favicon.ico"> TPREDICTIONS <span id="M">M</span><span id="T">T</span><span id="E">E</span></div>
+                <label id="label33" style="font-size: small; display: none;" for="input">Match:
+                  <input id="input" style="font-size: small; min-width: 75%; display: none;" placeholder="Liverpool vs Chelsea" type="text" minlength="4">
+                </label>
+                <p id="predictor-input-hint" class="predictor-input-hint" hidden=""></p>
+                <p id="predictor-mode-note" class="predictor-mode-note">Opens the prepared tournament report generated from saved tournament data.</p>
+                <button class="btn btn33 is-success" type="button" onclick="window.predictForPreview &amp;&amp; window.predictForPreview()" style="transform: scale(1);">Opened</button>
+              </div>
+            </div>
+
+            <div>
+              <section class="predictor-progress" id="predictor-progress" aria-live="polite" hidden="">
+                <div class="predictor-progress-heading">
+                  <span class="predictor-progress-orbit" aria-hidden="true"><span></span></span>
+                  <div class="predictor-progress-copy">
+                    <h3 id="predictor-progress-stage">Getting started</h3>
+                    <p id="predictor-progress-detail">Preparing your match search.</p>
+                  </div>
+                  <strong class="predictor-progress-percent" id="predictor-progress-percent">0%</strong>
+                </div>
+                <div class="predictor-progress-track" role="progressbar" aria-label="Prediction progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                  <div class="predictor-progress-fill" id="predictor-progress-fill"></div>
+                </div>
+                <div class="predictor-progress-meta">
+                  <span id="predictor-progress-source">Saved match data</span>
+                  <span id="predictor-progress-count">Waiting for the first update</span>
+                  <span id="predictor-progress-remaining"></span>
+                </div>
+              </section>
+              <div class="output predictor-report-output predictor-tournament-output" aria-busy="false"><article class="pcr-report pcr-report--tournament is-in"><p class="pcr-sr">Saved tournament report: 7 fixtures, 6 with prediction data. 5 fixtures have a model pick.</p><div class="pcr-head"><p class="pcr-eyebrow">Saved tournament report</p><h2 class="pcr-match">Tournament predictions</h2><p class="pcr-source">Prepared from saved match data. Open a fixture to inspect its probability and form detail.</p><div class="pcr-tournament-meta"><span class="pcr-tournament-chip">7 fixtures</span><span class="pcr-tournament-chip">6 with prediction data</span><span class="pcr-tournament-chip">5 model picks</span></div></div><div class="pcr-tournament-notice"><strong>Report note</strong> One saved entry had an unreadable match name and was skipped.</div><div class="pcr-tournament-toolbar"><label class="pcr-tournament-search-wrap"><span class="pcr-sr">Filter saved fixtures</span><input class="pcr-tournament-search" type="search" placeholder="Filter by team, pick or time" autocomplete="off"></label><span class="pcr-tournament-count">7 fixtures</span></div><div class="pcr-tournament-list"><div class="pcr-fixtures"><details class="pcr-fixture" data-search="liverpool chelsea liverpool to win 14:30"><summary class="pcr-fixture-summary"><span class="pcr-fixture-time">14:30</span><span class="pcr-fixture-teams"><span class="pcr-fixture-team">Liverpool</span><span class="pcr-fixture-vs">vs</span><span class="pcr-fixture-team">Chelsea</span></span><span class="pcr-fixture-pick" data-tone="win">Liverpool to win</span><span class="pcr-fixture-max">54%</span></summary><div class="pcr-fixture-body"><h4 class="pcr-fixture-section-title">Outcome probabilities</h4><div class="pcr-fixture-outcomes"><div class="pcr-fixture-outcome" data-pick="true"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Liverpool</span><strong class="pcr-fixture-outcome-value">54%</strong></div><div class="pcr-meter" role="img" aria-label="Liverpool: 54%"><span class="pcr-meter-fill" style="--pcr-value: 54;"></span></div></div><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Draw</span><strong class="pcr-fixture-outcome-value">15%</strong></div><div class="pcr-meter" role="img" aria-label="Draw: 15%"><span class="pcr-meter-fill" style="--pcr-value: 15;"></span></div></div><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Chelsea</span><strong class="pcr-fixture-outcome-value">31%</strong></div><div class="pcr-meter" role="img" aria-label="Chelsea: 31%"><span class="pcr-meter-fill" style="--pcr-value: 31;"></span></div></div></div><h4 class="pcr-fixture-section-title">Team form</h4><div class="pcr-fixture-forms"><article class="pcr-form"><h4 class="pcr-form-team">Liverpool</h4><div class="pcr-form-bar" role="img" aria-label="Liverpool historical form: 74% wins, 5% draws, 21% losses"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 74;"></span><span class="pcr-form-seg pcr-form-seg--draw" style="--pcr-value: 5;"></span><span class="pcr-form-seg pcr-form-seg--loss" style="--pcr-value: 21;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>74%</dd></div><div><dt>Draw</dt><dd>5%</dd></div><div><dt>Loss</dt><dd>21%</dd></div></dl></article><article class="pcr-form"><h4 class="pcr-form-team">Chelsea</h4><div class="pcr-form-bar" role="img" aria-label="Chelsea historical form: 42% wins, 37% draws, 21% losses"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 42;"></span><span class="pcr-form-seg pcr-form-seg--draw" style="--pcr-value: 37;"></span><span class="pcr-form-seg pcr-form-seg--loss" style="--pcr-value: 21;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>42%</dd></div><div><dt>Draw</dt><dd>37%</dd></div><div><dt>Loss</dt><dd>21%</dd></div></dl></article></div></div></details><details class="pcr-fixture" data-search="arsenal tottenham draw 15:00"><summary class="pcr-fixture-summary"><span class="pcr-fixture-time">15:00</span><span class="pcr-fixture-teams"><span class="pcr-fixture-team">Arsenal</span><span class="pcr-fixture-vs">vs</span><span class="pcr-fixture-team">Tottenham</span></span><span class="pcr-fixture-pick" data-tone="draw">Draw</span><span class="pcr-fixture-max">34%</span></summary><div class="pcr-fixture-body"><h4 class="pcr-fixture-section-title">Outcome probabilities</h4><div class="pcr-fixture-outcomes"><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Arsenal</span><strong class="pcr-fixture-outcome-value">33%</strong></div><div class="pcr-meter" role="img" aria-label="Arsenal: 33%"><span class="pcr-meter-fill" style="--pcr-value: 33;"></span></div></div><div class="pcr-fixture-outcome" data-pick="true"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Draw</span><strong class="pcr-fixture-outcome-value">34%</strong></div><div class="pcr-meter" role="img" aria-label="Draw: 34%"><span class="pcr-meter-fill" style="--pcr-value: 34;"></span></div></div><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Tottenham</span><strong class="pcr-fixture-outcome-value">33%</strong></div><div class="pcr-meter" role="img" aria-label="Tottenham: 33%"><span class="pcr-meter-fill" style="--pcr-value: 33;"></span></div></div></div><h4 class="pcr-fixture-section-title">Team form</h4><div class="pcr-fixture-forms"><article class="pcr-form"><h4 class="pcr-form-team">Arsenal</h4><div class="pcr-form-bar" role="img" aria-label="Arsenal historical form: 47% wins, 25% draws, 28% losses"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 47;"></span><span class="pcr-form-seg pcr-form-seg--draw" style="--pcr-value: 25;"></span><span class="pcr-form-seg pcr-form-seg--loss" style="--pcr-value: 28;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>47%</dd></div><div><dt>Draw</dt><dd>25%</dd></div><div><dt>Loss</dt><dd>28%</dd></div></dl></article><article class="pcr-form"><h4 class="pcr-form-team">Tottenham</h4><div class="pcr-form-bar" role="img" aria-label="Tottenham historical form: 44% wins, 26% draws, 30% losses"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 44;"></span><span class="pcr-form-seg pcr-form-seg--draw" style="--pcr-value: 26;"></span><span class="pcr-form-seg pcr-form-seg--loss" style="--pcr-value: 30;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>44%</dd></div><div><dt>Draw</dt><dd>26%</dd></div><div><dt>Loss</dt><dd>30%</dd></div></dl></article></div></div></details><details class="pcr-fixture" data-search="everton manchester city manchester city to win 16:15"><summary class="pcr-fixture-summary"><span class="pcr-fixture-time">16:15</span><span class="pcr-fixture-teams"><span class="pcr-fixture-team">Everton</span><span class="pcr-fixture-vs">vs</span><span class="pcr-fixture-team">Manchester City</span></span><span class="pcr-fixture-pick" data-tone="win">Manchester City to win</span><span class="pcr-fixture-max">71%</span></summary><div class="pcr-fixture-body"><h4 class="pcr-fixture-section-title">Outcome probabilities</h4><div class="pcr-fixture-outcomes"><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Everton</span><strong class="pcr-fixture-outcome-value">14%</strong></div><div class="pcr-meter" role="img" aria-label="Everton: 14%"><span class="pcr-meter-fill" style="--pcr-value: 14;"></span></div></div><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Draw</span><strong class="pcr-fixture-outcome-value">15%</strong></div><div class="pcr-meter" role="img" aria-label="Draw: 15%"><span class="pcr-meter-fill" style="--pcr-value: 15;"></span></div></div><div class="pcr-fixture-outcome" data-pick="true"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Manchester City</span><strong class="pcr-fixture-outcome-value">71%</strong></div><div class="pcr-meter" role="img" aria-label="Manchester City: 71%"><span class="pcr-meter-fill" style="--pcr-value: 71;"></span></div></div></div><h4 class="pcr-fixture-section-title">Team form</h4><div class="pcr-fixture-forms"><article class="pcr-form"><h4 class="pcr-form-team">Everton</h4><div class="pcr-form-bar" role="img" aria-label="Everton historical form: 29% wins, 30% draws, 41% losses"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 29;"></span><span class="pcr-form-seg pcr-form-seg--draw" style="--pcr-value: 30;"></span><span class="pcr-form-seg pcr-form-seg--loss" style="--pcr-value: 41;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>29%</dd></div><div><dt>Draw</dt><dd>30%</dd></div><div><dt>Loss</dt><dd>41%</dd></div></dl></article><article class="pcr-form"><h4 class="pcr-form-team">Manchester City</h4><div class="pcr-form-bar" role="img" aria-label="Manchester City historical form: 78% wins, 13% draws, 9% losses"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 78;"></span><span class="pcr-form-seg pcr-form-seg--draw" style="--pcr-value: 13;"></span><span class="pcr-form-seg pcr-form-seg--loss" style="--pcr-value: 9;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>78%</dd></div><div><dt>Draw</dt><dd>13%</dd></div><div><dt>Loss</dt><dd>9%</dd></div></dl></article></div></div></details><details class="pcr-fixture" data-search="wolves crystal palace no clear pick 17:00"><summary class="pcr-fixture-summary"><span class="pcr-fixture-time">17:00</span><span class="pcr-fixture-teams"><span class="pcr-fixture-team">Wolves</span><span class="pcr-fixture-vs">vs</span><span class="pcr-fixture-team">Crystal Palace</span></span><span class="pcr-fixture-pick" data-tone="unpredictable">No clear pick</span><span class="pcr-fixture-max"></span></summary><div class="pcr-fixture-body"><h4 class="pcr-fixture-section-title">Outcome probabilities</h4><div class="pcr-fixture-outcomes"><div class="pcr-fixture-outcome" data-pick="true"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Wolves</span><strong class="pcr-fixture-outcome-value">35%</strong></div><div class="pcr-meter" role="img" aria-label="Wolves: 35%"><span class="pcr-meter-fill" style="--pcr-value: 35;"></span></div></div><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Draw</span><strong class="pcr-fixture-outcome-value">31%</strong></div><div class="pcr-meter" role="img" aria-label="Draw: 31%"><span class="pcr-meter-fill" style="--pcr-value: 31;"></span></div></div><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Crystal Palace</span><strong class="pcr-fixture-outcome-value">34%</strong></div><div class="pcr-meter" role="img" aria-label="Crystal Palace: 34%"><span class="pcr-meter-fill" style="--pcr-value: 34;"></span></div></div></div><h4 class="pcr-fixture-section-title">Team form</h4><div class="pcr-fixture-forms"><article class="pcr-form"><h4 class="pcr-form-team">Wolves</h4><div class="pcr-form-bar" role="img" aria-label="Wolves historical form: 38% wins"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 38;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>38%</dd></div></dl></article><article class="pcr-form"><h4 class="pcr-form-team">Crystal Palace</h4><div class="pcr-form-bar" role="img" aria-label="Crystal Palace historical form: 36% wins"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 36;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>36%</dd></div></dl></article></div></div></details><details class="pcr-fixture" data-search="leeds fulham fulham to win 18:30"><summary class="pcr-fixture-summary"><span class="pcr-fixture-time">18:30</span><span class="pcr-fixture-teams"><span class="pcr-fixture-team">Leeds</span><span class="pcr-fixture-vs">vs</span><span class="pcr-fixture-team">Fulham</span></span><span class="pcr-fixture-pick" data-tone="win" data-derived="true" title="Most likely outcome in this saved report">Fulham to win</span><span class="pcr-fixture-max">47%</span></summary><div class="pcr-fixture-body"><h4 class="pcr-fixture-section-title">Outcome probabilities</h4><div class="pcr-fixture-outcomes"><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Leeds</span><strong class="pcr-fixture-outcome-value">44%</strong></div><div class="pcr-meter" role="img" aria-label="Leeds: 44%"><span class="pcr-meter-fill" style="--pcr-value: 44;"></span></div></div><div class="pcr-fixture-outcome" data-pick="true"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Fulham</span><strong class="pcr-fixture-outcome-value">47%</strong></div><div class="pcr-meter" role="img" aria-label="Fulham: 47%"><span class="pcr-meter-fill" style="--pcr-value: 47;"></span></div></div></div></div></details><details class="pcr-fixture" data-search=" 19:00"><summary class="pcr-fixture-summary"><span class="pcr-fixture-time">19:00</span><span class="pcr-fixture-teams"><span class="pcr-fixture-team">Saved fixture</span></span><span class="pcr-fixture-pick">No pick</span><span class="pcr-fixture-max"></span></summary><p class="pcr-fixture-empty">No stored prediction data for this fixture.</p></details><details class="pcr-fixture" data-search="newcastle brighton newcastle to win 20:45"><summary class="pcr-fixture-summary"><span class="pcr-fixture-time">20:45</span><span class="pcr-fixture-teams"><span class="pcr-fixture-team">Newcastle</span><span class="pcr-fixture-vs">vs</span><span class="pcr-fixture-team">Brighton</span></span><span class="pcr-fixture-pick" data-tone="win">Newcastle to win</span><span class="pcr-fixture-max">48%</span></summary><div class="pcr-fixture-body"><h4 class="pcr-fixture-section-title">Outcome probabilities</h4><div class="pcr-fixture-outcomes"><div class="pcr-fixture-outcome" data-pick="true"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Newcastle</span><strong class="pcr-fixture-outcome-value">48%</strong></div><div class="pcr-meter" role="img" aria-label="Newcastle: 48%"><span class="pcr-meter-fill" style="--pcr-value: 48;"></span></div></div><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Draw</span><strong class="pcr-fixture-outcome-value">23%</strong></div><div class="pcr-meter" role="img" aria-label="Draw: 23%"><span class="pcr-meter-fill" style="--pcr-value: 23;"></span></div></div><div class="pcr-fixture-outcome"><div class="pcr-fixture-outcome-top"><span class="pcr-fixture-outcome-name">Brighton</span><strong class="pcr-fixture-outcome-value">29%</strong></div><div class="pcr-meter" role="img" aria-label="Brighton: 29%"><span class="pcr-meter-fill" style="--pcr-value: 29;"></span></div></div></div><h4 class="pcr-fixture-section-title">Team form</h4><div class="pcr-fixture-forms"><article class="pcr-form"><h4 class="pcr-form-team">Newcastle</h4><div class="pcr-form-bar" role="img" aria-label="Newcastle historical form: 52% wins"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 52;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>52%</dd></div></dl></article><article class="pcr-form"><h4 class="pcr-form-team">Brighton</h4><div class="pcr-form-bar" role="img" aria-label="Brighton historical form: 45% wins"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 45;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>45%</dd></div></dl></article></div></div></details></div><p class="pcr-fixtures-empty" hidden="">No saved fixtures match that filter.</p></div><p class="pcr-footnote">Predictions are estimates from saved match data, not guarantees.</p></article></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="fixtures.js"></script>
+  <script src="../Logged/js/predictor-view.js" onerror="window.__PVR_LOAD_ERROR = 'predictor-view.js failed to load'"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var theme = params.get('theme') === 'light' ? 'light' : 'dark';
+      var testCase = params.get('case') || 'win';
+      var bare = params.get('bare') === '1';
+
+      if (bare) {
+        document.body.classList.add('pvr-bare');
+        document.documentElement.classList.add('pvr-noanim');
+      }
+      document.documentElement.classList.toggle('pvr-light', theme === 'light');
+      if (theme === 'light') document.getElementById('theme-css').href = '../Logged/css/styles2.css';
+
+      var output = document.querySelector('.output');
+      var input = document.getElementById('input');
+      var button = document.querySelector('.btn33');
+      var progress = document.getElementById('predictor-progress');
+      var status = document.getElementById('pvr-status');
+
+      function setStatus(text, level) {
+        if (!status) return;
+        status.textContent = text;
+        status.setAttribute('data-level', level);
+        document.title = 'PVR ' + level + ': ' + text;
+      }
+
+      function reportMissing() {
+        output.innerHTML = '<p style="color:#ef5350;font:14px Segoe UI,Arial,sans-serif;padding:24px">' +
+          'predictor-view.js is not available yet (' + (window.__PVR_LOAD_ERROR || 'missing') + ').</p>';
+        setStatus('renderer missing', 'error');
+      }
+
+      function setMode(mode) {
+        var label = document.getElementById('label33');
+        var note = document.getElementById('predictor-mode-note');
+        var card = document.getElementById('cencon');
+        var premium = mode === 'premium';
+        label.style.display = premium ? 'none' : '';
+        input.style.display = premium ? 'none' : '';
+        input.classList.remove('Removebtn');
+        button.textContent = premium ? 'Initiate' : 'Predict';
+        button.style.transform = 'scale(1)';
+        button.style.marginTop = '';
+        button.style.marginBottom = '';
+        if (note) {
+          note.hidden = !premium;
+          note.textContent = premium ? 'Opens the prepared tournament report generated from saved tournament data.' : '';
+        }
+        if (card) card.classList.toggle('mode-premium', premium);
+      }
+
+      function renderCase() {
+        var view = window.PredictorView;
+        if (!view) { reportMissing(); return; }
+        output.replaceChildren();
+        output.classList.remove('predictor-report-output', 'is-raw');
+        progress.hidden = true;
+        button.classList.remove('is-loading', 'is-success');
+        button.disabled = false;
+        setMode('individual');
+
+        if (testCase === 'empty' || testCase === 'premium-empty') {
+          if (testCase === 'premium-empty') setMode('premium');
+          view.renderEmpty(output, { mode: testCase === 'premium-empty' ? 'premium' : 'individual' });
+          setStatus(testCase === 'premium-empty' ? 'premium mode' : 'empty state', 'ok');
+          return;
+        }
+        if (testCase === 'error') {
+          view.renderError(output, { kind: 'network', query: 'Liverpool vs Chelsea' });
+          setStatus('error state', 'ok');
+          return;
+        }
+        if (testCase === 'format') {
+          view.renderError(output, { kind: 'format', query: 'Liverpool' });
+          setStatus('format error state', 'ok');
+          return;
+        }
+        if (testCase === 'noresults') {
+          view.renderError(output, { kind: 'no-results', query: 'Foo vs Bar' });
+          setStatus('no-results state', 'ok');
+          return;
+        }
+        if (testCase === 'fallback') {
+          view.renderFallback(output,
+            "<div id='vs_info'><span class='info_line'>Unexpected legacy report line: 61%</span><span class='info_line'>Another saved data row</span></div>",
+            'Liverpool vs Chelsea');
+          setStatus('fallback state', 'ok');
+          return;
+        }
+        if (testCase === 'loading') {
+          input.value = 'Liverpool vs Chelsea';
+          button.classList.add('is-loading');
+          button.disabled = true;
+          button.textContent = 'Analysing…';
+          progress.hidden = false;
+          document.getElementById('predictor-progress-stage').textContent = 'Comparing saved team form';
+          document.getElementById('predictor-progress-detail').textContent = 'Reading the last matches for Liverpool and Chelsea.';
+          document.getElementById('predictor-progress-percent').textContent = '46%';
+          document.getElementById('predictor-progress-fill').style.width = '46%';
+          document.getElementById('predictor-progress-count').textContent = '23 of 48 checked · 6 found';
+          document.getElementById('predictor-progress-remaining').textContent = '25 left';
+          setStatus('loading state', 'ok');
+          return;
+        }
+
+        if (testCase === 'tournament') {
+          setMode('premium');
+          if (view.renderTournament(output, window.PVR_FIXTURES.tournament.raw)) {
+            button.classList.add('is-success');
+            button.textContent = 'Opened';
+            setStatus('tournament report', 'ok');
+          } else {
+            setStatus('tournament render failed', 'error');
+          }
+          return;
+        }
+
+        var fixture = window.PVR_FIXTURES[testCase] || window.PVR_FIXTURES.win;
+        input.value = fixture.query;
+        var result = view.render(output, fixture.raw, fixture.query);
+        if (!result || !result.ok) {
+          view.renderFallback(output, fixture.raw, fixture.query);
+          setStatus('parse fell back for ' + testCase, 'error');
+          return;
+        }
+        setStatus('rendered ' + testCase, 'ok');
+      }
+
+      document.querySelectorAll('[data-theme]').forEach(function (el) {
+        el.setAttribute('aria-pressed', String(el.getAttribute('data-theme') === theme));
+        el.addEventListener('click', function () {
+          params.set('theme', el.getAttribute('data-theme'));
+          window.location.search = params.toString();
+        });
+      });
+      document.querySelectorAll('[data-case]').forEach(function (el) {
+        el.setAttribute('aria-pressed', String(el.getAttribute('data-case') === testCase));
+        el.addEventListener('click', function () {
+          params.set('case', el.getAttribute('data-case'));
+          window.location.search = params.toString();
+        });
+      });
+
+      window.predictForPreview = function () {
+        var text = (input.value || '').trim();
+        if (!text) {
+          input.classList.add('is-invalid');
+          var hint = document.getElementById('predictor-input-hint');
+          hint.textContent = 'Enter two teams, for example Liverpool vs Chelsea.';
+          hint.hidden = false;
+          input.focus();
+          return;
+        }
+        output.replaceChildren();
+        button.classList.add('is-loading');
+        button.disabled = true;
+        button.textContent = 'Analysing…';
+        progress.hidden = false;
+        document.getElementById('predictor-progress-stage').textContent = 'Finding both teams';
+        document.getElementById('predictor-progress-detail').textContent = 'Searching stored team data for your match.';
+        document.getElementById('predictor-progress-percent').textContent = '12%';
+        document.getElementById('predictor-progress-fill').style.width = '12%';
+        document.getElementById('predictor-progress-count').textContent = 'Checking the saved data';
+        setTimeout(function () {
+          progress.hidden = true;
+          button.classList.remove('is-loading');
+          button.disabled = false;
+          button.textContent = 'Predict';
+          input.value = 'Liverpool vs Chelsea';
+          window.PredictorView.render(output, window.PVR_FIXTURES.win.raw, 'Liverpool vs Chelsea');
+          setStatus('animated render', 'ok');
+        }, 900);
+      };
+
+      input.addEventListener('input', function () {
+        input.classList.remove('is-invalid');
+        var hint = document.getElementById('predictor-input-hint');
+        hint.hidden = true;
+      });
+
+      renderCase();
+    })();
+  </script>
+
+
+
+</body></html>

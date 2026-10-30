@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" class="pvr-noanim"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PVR ok: rendered mangled</title>
+  <link id="theme-css" rel="stylesheet" href="../Logged/css/styles.css">
+  <style>
+    /* Preview-only chrome. The real page uses the dashboard's own shell. */
+    body { min-height: 100vh; }
+    .pvr-bar { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .6rem .8rem; border-bottom: 1px solid #333; background: #111; color: #ddd; font: 12px/1.4 "Segoe UI", Arial, sans-serif; }
+    html.pvr-light .pvr-bar { border-color: #dbe4ef; background: #f4f7fb; color: #22303f; }
+    .pvr-bar button { padding: .3rem .55rem; border: 1px solid #555; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+    html.pvr-light .pvr-bar button { border-color: #b9c8d9; }
+    .pvr-bar button[aria-pressed="true"] { border-color: #007acc; color: #007acc; }
+    .pvr-bar .pvr-spacer { flex: 1 1 auto; }
+    .pvr-status { font-weight: 700; }
+    .pvr-status[data-level="error"] { color: #ef5350; }
+    .pvr-status[data-level="ok"] { color: #2ecc71; }
+    body.pvr-bare .pvr-bar { display: none; }
+    body.pvr-bare .container22 { margin-top: 24px; }
+    /* Screenshot mode: capture the settled state, not a reveal frame. */
+    html.pvr-noanim .pcr-report,
+    html.pvr-noanim .pcr-report *,
+    html.pvr-noanim .predictor-progress,
+    html.pvr-noanim .predictor-progress * {
+      animation: none !important;
+      transition: none !important;
+    }
+    /* Screenshot mode must show the settled meter widths even if rAF is
+       throttled in headless Chrome. */
+    html.pvr-noanim .pcr-meter-fill {
+      width: calc(var(--pcr-value, 0) * 1%) !important;
+    }
+  </style>
+</head>
+
+<body class="pvr-bare">
+  <div class="pvr-bar" id="pvr-bar">
+    <strong>Predicter preview</strong>
+    <span>·</span>
+    <button type="button" data-theme="dark" aria-pressed="true">Dark</button>
+    <button type="button" data-theme="light" aria-pressed="false">Light</button>
+    <span>·</span>
+    <button type="button" data-case="win" aria-pressed="false">Win</button>
+    <button type="button" data-case="draw" aria-pressed="false">Draw</button>
+    <button type="button" data-case="away" aria-pressed="false">Away</button>
+    <button type="button" data-case="unpredictable" aria-pressed="false">Unpredictable</button>
+    <button type="button" data-case="partial" aria-pressed="false">Partial</button>
+    <button type="button" data-case="mangled" aria-pressed="true">Mangled names</button>
+    <button type="button" data-case="empty" aria-pressed="false">Empty</button>
+    <button type="button" data-case="premium-empty" aria-pressed="false">Premium empty</button>
+    <button type="button" data-case="error" aria-pressed="false">Error</button>
+    <button type="button" data-case="format" aria-pressed="false">Format error</button>
+    <button type="button" data-case="noresults" aria-pressed="false">No results</button>
+    <button type="button" data-case="fallback" aria-pressed="false">Fallback</button>
+    <button type="button" data-case="loading" aria-pressed="false">Loading</button>
+    <button type="button" data-case="tournament" aria-pressed="false">Tournament</button>
+    <span class="pvr-spacer"></span>
+    <span id="pvr-status" class="pvr-status" data-level="ok">rendered mangled</span>
+  </div>
+
+  <main id="mainc-">
+    <div class="container22">
+      <div class="header">
+        <div id="today">Predictions</div>
+        <div id="analysis">Bets</div>
+        <div id="predicter" class="active">Predicter</div>
+      </div>
+      <div class="content2 text-gray-900" id="contentArea">
+        <div class="container33">
+          <div class="holder">
+            <div id="cencon" class="container-bts">
+              <div class="form">
+                <div class="cap"><img style="height:50px;width:50px; border-radius: 50%;display: inline;" src="../favicon.ico"> TPREDICTIONS <span id="M">M</span><span id="T">T</span><span id="E">E</span></div>
+                <label id="label33" style="font-size: small" for="input">Match:
+                  <input id="input" style="font-size: small; min-width: 75%;" placeholder="Liverpool vs Chelsea" type="text" minlength="4">
+                </label>
+                <p id="predictor-input-hint" class="predictor-input-hint" hidden=""></p>
+                <p id="predictor-mode-note" class="predictor-mode-note" hidden=""></p>
+                <button class="btn btn33" type="button" onclick="window.predictForPreview &amp;&amp; window.predictForPreview()" style="transform: scale(1);">Predict</button>
+              </div>
+            </div>
+
+            <div>
+              <section class="predictor-progress" id="predictor-progress" aria-live="polite" hidden="">
+                <div class="predictor-progress-heading">
+                  <span class="predictor-progress-orbit" aria-hidden="true"><span></span></span>
+                  <div class="predictor-progress-copy">
+                    <h3 id="predictor-progress-stage">Getting started</h3>
+                    <p id="predictor-progress-detail">Preparing your match search.</p>
+                  </div>
+                  <strong class="predictor-progress-percent" id="predictor-progress-percent">0%</strong>
+                </div>
+                <div class="predictor-progress-track" role="progressbar" aria-label="Prediction progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                  <div class="predictor-progress-fill" id="predictor-progress-fill"></div>
+                </div>
+                <div class="predictor-progress-meta">
+                  <span id="predictor-progress-source">Saved match data</span>
+                  <span id="predictor-progress-count">Waiting for the first update</span>
+                  <span id="predictor-progress-remaining"></span>
+                </div>
+              </section>
+              <div class="output predictor-report-output" aria-busy="false"><article class="pcr-report is-in" data-tone="win"><p class="pcr-sr">Match prediction: Everton vs Manchester City. Everton 14%, Draw 15%, Manchester City 71%. Model pick: Manchester City to win.</p><div class="pcr-head"><p class="pcr-eyebrow">Match prediction</p><h2 class="pcr-match"><span class="pcr-team">Everton</span><span class="pcr-vs">vs</span><span class="pcr-team">Manchester City</span></h2><p class="pcr-source">Based on stored team form and match-history records.</p></div><section class="pcr-pick" data-tone="win"><p class="pcr-pick-label">Model pick</p><p class="pcr-pick-value">Manchester City to win</p><p class="pcr-pick-note">71% outcome probability</p></section><section class="pcr-section pcr-section--outcomes"><div class="pcr-section-head"><h3 class="pcr-section-title">Match outcome probabilities</h3><p class="pcr-section-hint">Estimated chance of each result, from 0% to 100%.</p></div><div class="pcr-outcomes"><div class="pcr-outcome" style="--pcr-delay: 0ms;"><div class="pcr-outcome-top"><span class="pcr-outcome-name">Everton</span><strong class="pcr-outcome-value">14%</strong></div><div class="pcr-meter" role="img" aria-label="Everton: 14%"><span class="pcr-meter-fill" style="--pcr-value: 14;"></span></div></div><div class="pcr-outcome" style="--pcr-delay: 40ms;"><div class="pcr-outcome-top"><span class="pcr-outcome-name">Draw</span><strong class="pcr-outcome-value">15%</strong></div><div class="pcr-meter" role="img" aria-label="Draw: 15%"><span class="pcr-meter-fill" style="--pcr-value: 15;"></span></div></div><div class="pcr-outcome" data-pick="true" style="--pcr-delay: 80ms;"><div class="pcr-outcome-top"><span class="pcr-outcome-name">Manchester City</span><strong class="pcr-outcome-value">71%</strong></div><div class="pcr-meter" role="img" aria-label="Manchester City: 71%"><span class="pcr-meter-fill" style="--pcr-value: 71;"></span></div><span class="pcr-outcome-tag">Most likely</span></div></div></section><section class="pcr-section pcr-section--form"><div class="pcr-section-head"><h3 class="pcr-section-title">Team form</h3><p class="pcr-section-hint">Historical result split for each team — separate from the match probabilities above.</p></div><div class="pcr-forms"><article class="pcr-form"><h4 class="pcr-form-team">Everton</h4><div class="pcr-form-bar" role="img" aria-label="Everton historical form: 29% wins, 30% draws, 41% losses"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 29;"></span><span class="pcr-form-seg pcr-form-seg--draw" style="--pcr-value: 30;"></span><span class="pcr-form-seg pcr-form-seg--loss" style="--pcr-value: 41;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>29%</dd></div><div><dt>Draw</dt><dd>30%</dd></div><div><dt>Loss</dt><dd>41%</dd></div></dl></article><article class="pcr-form"><h4 class="pcr-form-team">Manchester City</h4><div class="pcr-form-bar" role="img" aria-label="Manchester City historical form: 78% wins, 13% draws, 9% losses"><span class="pcr-form-seg pcr-form-seg--win" style="--pcr-value: 78;"></span><span class="pcr-form-seg pcr-form-seg--draw" style="--pcr-value: 13;"></span><span class="pcr-form-seg pcr-form-seg--loss" style="--pcr-value: 9;"></span></div><dl class="pcr-form-legend"><div><dt>Win</dt><dd>78%</dd></div><div><dt>Draw</dt><dd>13%</dd></div><div><dt>Loss</dt><dd>9%</dd></div></dl></article></div></section><p class="pcr-footnote">Predictions are estimates from saved match data, not guarantees.</p></article></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="fixtures.js"></script>
+  <script src="../Logged/js/predictor-view.js" onerror="window.__PVR_LOAD_ERROR = 'predictor-view.js failed to load'"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var theme = params.get('theme') === 'light' ? 'light' : 'dark';
+      var testCase = params.get('case') || 'win';
+      var bare = params.get('bare') === '1';
+
+      if (bare) {
+        document.body.classList.add('pvr-bare');
+        document.documentElement.classList.add('pvr-noanim');
+      }
+      document.documentElement.classList.toggle('pvr-light', theme === 'light');
+      if (theme === 'light') document.getElementById('theme-css').href = '../Logged/css/styles2.css';
+
+      var output = document.querySelector('.output');
+      var input = document.getElementById('input');
+      var button = document.querySelector('.btn33');
+      var progress = document.getElementById('predictor-progress');
+      var status = document.getElementById('pvr-status');
+
+      function setStatus(text, level) {
+        if (!status) return;
+        status.textContent = text;
+        status.setAttribute('data-level', level);
+        document.title = 'PVR ' + level + ': ' + text;
+      }
+
+      function reportMissing() {
+        output.innerHTML = '<p style="color:#ef5350;font:14px Segoe UI,Arial,sans-serif;padding:24px">' +
+          'predictor-view.js is not available yet (' + (window.__PVR_LOAD_ERROR || 'missing') + ').</p>';
+        setStatus('renderer missing', 'error');
+      }
+
+      function setMode(mode) {
+        var label = document.getElementById('label33');
+        var note = document.getElementById('predictor-mode-note');
+        var card = document.getElementById('cencon');
+        var premium = mode === 'premium';
+        label.style.display = premium ? 'none' : '';
+        input.style.display = premium ? 'none' : '';
+        input.classList.remove('Removebtn');
+        button.textContent = premium ? 'Initiate' : 'Predict';
+        button.style.transform = 'scale(1)';
+        button.style.marginTop = '';
+        button.style.marginBottom = '';
+        if (note) {
+          note.hidden = !premium;
+          note.textContent = premium ? 'Opens the prepared tournament report generated from saved tournament data.' : '';
+        }
+        if (card) card.classList.toggle('mode-premium', premium);
+      }
+
+      function renderCase() {
+        var view = window.PredictorView;
+        if (!view) { reportMissing(); return; }
+        output.replaceChildren();
+        output.classList.remove('predictor-report-output', 'is-raw');
+        progress.hidden = true;
+        button.classList.remove('is-loading', 'is-success');
+        button.disabled = false;
+        setMode('individual');
+
+        if (testCase === 'empty' || testCase === 'premium-empty') {
+          if (testCase === 'premium-empty') setMode('premium');
+          view.renderEmpty(output, { mode: testCase === 'premium-empty' ? 'premium' : 'individual' });
+          setStatus(testCase === 'premium-empty' ? 'premium mode' : 'empty state', 'ok');
+          return;
+        }
+        if (testCase === 'error') {
+          view.renderError(output, { kind: 'network', query: 'Liverpool vs Chelsea' });
+          setStatus('error state', 'ok');
+          return;
+        }
+        if (testCase === 'format') {
+          view.renderError(output, { kind: 'format', query: 'Liverpool' });
+          setStatus('format error state', 'ok');
+          return;
+        }
+        if (testCase === 'noresults') {
+          view.renderError(output, { kind: 'no-results', query: 'Foo vs Bar' });
+          setStatus('no-results state', 'ok');
+          return;
+        }
+        if (testCase === 'fallback') {
+          view.renderFallback(output,
+            "<div id='vs_info'><span class='info_line'>Unexpected legacy report line: 61%</span><span class='info_line'>Another saved data row</span></div>",
+            'Liverpool vs Chelsea');
+          setStatus('fallback state', 'ok');
+          return;
+        }
+        if (testCase === 'loading') {
+          input.value = 'Liverpool vs Chelsea';
+          button.classList.add('is-loading');
+          button.disabled = true;
+          button.textContent = 'Analysing…';
+          progress.hidden = false;
+          document.getElementById('predictor-progress-stage').textContent = 'Comparing saved team form';
+          document.getElementById('predictor-progress-detail').textContent = 'Reading the last matches for Liverpool and Chelsea.';
+          document.getElementById('predictor-progress-percent').textContent = '46%';
+          document.getElementById('predictor-progress-fill').style.width = '46%';
+          document.getElementById('predictor-progress-count').textContent = '23 of 48 checked · 6 found';
+          document.getElementById('predictor-progress-remaining').textContent = '25 left';
+          setStatus('loading state', 'ok');
+          return;
+        }
+
+        if (testCase === 'tournament') {
+          setMode('premium');
+          if (view.renderTournament(output, window.PVR_FIXTURES.tournament.raw)) {
+            button.classList.add('is-success');
+            button.textContent = 'Opened';
+            setStatus('tournament report', 'ok');
+          } else {
+            setStatus('tournament render failed', 'error');
+          }
+          return;
+        }
+
+        var fixture = window.PVR_FIXTURES[testCase] || window.PVR_FIXTURES.win;
+        input.value = fixture.query;
+        var result = view.render(output, fixture.raw, fixture.query);
+        if (!result || !result.ok) {
+          view.renderFallback(output, fixture.raw, fixture.query);
+          setStatus('parse fell back for ' + testCase, 'error');
+          return;
+        }
+        setStatus('rendered ' + testCase, 'ok');
+      }
+
+      document.querySelectorAll('[data-theme]').forEach(function (el) {
+        el.setAttribute('aria-pressed', String(el.getAttribute('data-theme') === theme));
+        el.addEventListener('click', function () {
+          params.set('theme', el.getAttribute('data-theme'));
+          window.location.search = params.toString();
+        });
+      });
+      document.querySelectorAll('[data-case]').forEach(function (el) {
+        el.setAttribute('aria-pressed', String(el.getAttribute('data-case') === testCase));
+        el.addEventListener('click', function () {
+          params.set('case', el.getAttribute('data-case'));
+          window.location.search = params.toString();
+        });
+      });
+
+      window.predictForPreview = function () {
+        var text = (input.value || '').trim();
+        if (!text) {
+          input.classList.add('is-invalid');
+          var hint = document.getElementById('predictor-input-hint');
+          hint.textContent = 'Enter two teams, for example Liverpool vs Chelsea.';
+          hint.hidden = false;
+          input.focus();
+          return;
+        }
+        output.replaceChildren();
+        button.classList.add('is-loading');
+        button.disabled = true;
+        button.textContent = 'Analysing…';
+        progress.hidden = false;
+        document.getElementById('predictor-progress-stage').textContent = 'Finding both teams';
+        document.getElementById('predictor-progress-detail').textContent = 'Searching stored team data for your match.';
+        document.getElementById('predictor-progress-percent').textContent = '12%';
+        document.getElementById('predictor-progress-fill').style.width = '12%';
+        document.getElementById('predictor-progress-count').textContent = 'Checking the saved data';
+        setTimeout(function () {
+          progress.hidden = true;
+          button.classList.remove('is-loading');
+          button.disabled = false;
+          button.textContent = 'Predict';
+          input.value = 'Liverpool vs Chelsea';
+          window.PredictorView.render(output, window.PVR_FIXTURES.win.raw, 'Liverpool vs Chelsea');
+          setStatus('animated render', 'ok');
+        }, 900);
+      };
+
+      input.addEventListener('input', function () {
+        input.classList.remove('is-invalid');
+        var hint = document.getElementById('predictor-input-hint');
+        hint.hidden = true;
+      });
+
+      renderCase();
+    })();
+  </script>
+
+
+
+</body></html>
