@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>TPREDICTIONS | Trends</title>
+  <link id="base-theme-stylesheet" rel="stylesheet" href="../css/styles.css?v=20261027-readable-trends">
+  <script>
+    (function () {
+      var theme = localStorage.getItem("theme_+-----") || "Dark";
+      document.documentElement.dataset.theme = theme === "Light" ? "light" : "dark";
+      document.querySelector('meta[name="color-scheme"]').content = theme === "Light" ? "light" : "dark";
+      if (theme === "Light") {
+        document.getElementById("base-theme-stylesheet").href = "../css/styles2.css?v=20261027-readable-trends";
+      }
+    })();
+  </script>
+  <link rel="shortcut icon" href="../../favicon.ico" type="image/x-icon">
+  <script src="../js/taiwan.js"></script>
+  <script src="js/mod.js"></script>
+  <script src="../../js/allhandler.js"></script>
+  <script src="js/script.js?v=20261027-readable-trends" defer></script>
+</head>
+<body class="trends-page">
+  <header class="flex">
+    <div class="logo flex items-center gap-3 animate-fade-in-down">
+      <div class="logo_img">
+        <img style="border-radius: 50%; width: 50px; height: 50px" src="../../favicon.ico" alt="">
+      </div>
+      <div class="logo_name" style="text-transform: uppercase">TPREDICTIONS</div>
+    </div>
+    <nav aria-label="Main navigation">
+      <ul id="naivigation_1">
+        <li><a href="../index.html" id="Dashboard">Dashboard</a></li>
+        <li><a href="../profile/index.html" id="ott2">Profile</a></li>
+        <li><a href="../users/index.html" id="ott1">Users</a></li>
+        <li><a href="index.html" id="BTS" class="active_" aria-current="page">Trends</a></li>
+        <li style="margin-right: 20px"><a id="ll1" onclick="logout()" href="#">Log Out</a></li>
+      </ul>
+      <button id="menu-btn" class="fixed top-7 right-4 z-50 flex flex-col gap-1" type="button" aria-label="Open navigation" aria-controls="side-menu" aria-expanded="false">
+        <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar1"></div>
+        <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar2"></div>
+        <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar3"></div>
+      </button>
+      <div id="overlay" class="fixed inset-0 bg-white/60 backdrop-blur-md z-40 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
+      <aside id="side-menu" class="fixed top-0 right-0 w-80 h-full bg-white bg-opacity-80 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-l border-white/50 z-50 transform translate-x-full transition-transform duration-500 ease-in-out flex flex-col p-6 gap-6" aria-label="Mobile navigation">
+        <div class="flex justify-between items-center">
+          <h2 id="hmen" class="text-2xl font-extrabold text-gray-900"><img style="height: 50px; width: 50px; border-radius: 50%; display: inline" src="../../favicon.ico" alt="TPREDICTIONS"></h2>
+          <button id="close-btn" class="text-2xl font-bold text-gray-500 hover:text-gray-900" type="button" aria-label="Close navigation">×</button>
+        </div>
+        <a href="../index.html" class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200">🏠 <span>Dashboard</span></a>
+        <a href="../profile/index.html" class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200">👤 <span>Profile</span></a>
+        <a href="../users/index.html" class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200">👥 <span>Users</span></a>
+        <a href="index.html" class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200" aria-current="page">📈 <span>Trends</span></a>
+        <a href="#" onclick="logout()" class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200">🚪 <span>Log Out</span></a>
+      </aside>
+    </nav>
+  </header>
+
+  <div class="smoother" aria-hidden="true"></div>
+  <div class="container22 trends-shell" role="main">
+    <div class="header"><div><h1 id="title">Team trends</h1></div></div>
+    <section class="content trends-intro" aria-labelledby="title">
+      <p>Explore unbeaten runs, winning and losing streaks, and teams that have gone several matches without a win. Filter by country, competition, or team.</p>
+      <p><a class="headu" href="https://www.soccerstats247.com/trends/" target="_blank" rel="noopener noreferrer">Open SoccerStats247 trends page ↗</a></p>
+      <div class="trends-summary" aria-label="Trend summary">
+        <div class="card"><strong id="trend-total">—</strong><p>Team trends</p></div>
+        <div class="card"><strong id="competition-total">—</strong><p>Competitions</p></div>
+        <div class="card"><strong id="country-total">—</strong><p>Countries</p></div>
+        <div class="card"><strong id="trend-updated">Waiting for data</strong><p>Last refreshed</p></div>
+      </div>
+    </section>
+
+    <div class="header"><div><h2>Filter trends</h2></div></div>
+    <section class="content trends-controls" aria-label="Filter trends">
+      <label class="trend-filter"><span>Search trends</span>
+        <input id="trend-search" type="search" autocomplete="off" placeholder="Search teams, countries, competitions…" aria-label="Search trends">
+      </label>
+      <label class="trend-filter"><span>Country</span>
+        <select id="trend-country"><option value="">All countries</option></select>
+      </label>
+      <label class="trend-filter"><span>Competition</span>
+        <select id="trend-competition"><option value="">All competitions</option></select>
+      </label>
+      <label class="trend-filter"><span>Trend</span>
+        <select id="trend-category">
+          <option value="">All trends</option>
+          <option value="unbeaten">Unbeaten</option>
+          <option value="winning">Winning streak</option>
+          <option value="winless">Without a win</option>
+          <option value="losing">Losing streak</option>
+        </select>
+      </label>
+      <label class="trend-filter"><span>Sort</span>
+        <select id="trend-sort">
+          <option value="longest">Longest streak</option>
+          <option value="team">Team A–Z</option>
+          <option value="competition">Competition A–Z</option>
+        </select>
+      </label>
+      <div class="trends-actions"><button id="trend-clear" class="trend-action" type="button">Clear filters</button></div>
+    </section>
+
+    <div class="header"><div><h2>Current team trends</h2></div></div>
+    <section class="content" aria-label="Current team trends">
+      <div class="trends-results-meta">
+        <p id="trend-result-count" aria-live="polite">Loading trends…</p>
+        <p id="trend-message" role="status"></p>
+      </div>
+      <div id="trends-container" class="c1"></div>
+      <div class="trends-actions"><button id="trend-load-more" class="trend-action" type="button" hidden>Show more competitions</button></div>
+      <div id="trend-empty" class="trends-empty card" hidden>
+        <h2>No trends match those filters</h2>
+        <p>Try a shorter search or clear one of the filters.</p>
+        <button id="trend-empty-clear" class="trend-action" type="button">Clear filters</button>
+        <button id="trend-empty-retry" class="trend-action" type="button" hidden>Retry loading trends</button>
+      </div>
+      <p class="trends-note">These are recent form indicators, not guarantees of a match result.</p>
+    </section>
+  </div>
+  <footer>Trend data from <a href="https://www.soccerstats247.com/trends/" target="_blank" rel="noopener noreferrer">SoccerStats247</a>.</footer>
+</body>
+</html>

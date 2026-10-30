@@ -1,11 +1,10 @@
 User-agent: *
-Disallow: /private/
 Disallow: /Logged/
-Disallow: /cost/
-Disallow: /services/
 Disallow: /payment/
+Disallow: /services/
 Disallow: /login/
 Disallow: /js/
 Disallow: /verify/
+Allow: /Terms _and_Conditions/
+Allow: /privacy_policy/
 
-Allow: /welcome/

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Results Line Graph</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .st_and_ac {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background-color: #fff;
+      color: #000;
+      transition: background-color 0.5s ease, color 0.5s ease;
+    }
+    .st_and_ac  .dark-mode {
+      background-color: #111;
+      color: #f0f0f0;
+    }
+    .toggle-button {
+      padding: 0.5rem 1rem;
+      margin-bottom: 1rem;
+      border: none;
+      cursor: pointer;
+      background-color: #333;
+      color: white;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .st_and_ac canvas {
+      max-width: 800px;
+      max-height: 400px;
+      width: 100%;
+      margin: 0 auto 2rem;
+      display: block;
+    }
+    .st_and_ac #stats {
+      font-size: 1.1rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .st_and_ac h2 {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    const rawData = {
+    }
+function analysis3(rawData){
+     const winCounts = {}, lossCounts = {}, accuracy = {};
+    const matchData = {};
+
+    for (const [k, entry] of Object.entries(rawData.win || {})) {
+  const date = entry.date;
+  winCounts[date] = (winCounts[date] || 0) + 1;
+  if (!matchData[date]) matchData[date] = [];
+  matchData[date].push(`✅ ${entry.match}`);
+}
+
+    for (const [k, entry] of Object.entries(rawData.loss || {})) {
+  const date = entry.date;
+  lossCounts[date] = (lossCounts[date] || 0) + 1;
+  if (!matchData[date]) matchData[date] = [];
+  matchData[date].push(`❌ ${entry.match}`);
+}
+
+    const allDates = Array.from(new Set([...Object.keys(winCounts), ...Object.keys(lossCounts)])).sort();
+
+    allDates.forEach(date => {
+      const win = winCounts[date] || 0;
+      const loss = lossCounts[date] || 0;
+      accuracy[date] = (win + loss) > 0 ? (win / (win + loss)) * 100 : 0;
+    });
+
+    const totalWins = Object.values(winCounts).reduce((a, b) => a + b, 0);
+    const totalLosses = Object.values(lossCounts).reduce((a, b) => a + b, 0);
+    const overallAccuracy = (totalWins + totalLosses) > 0 ? (totalWins / (totalWins + totalLosses) * 100).toFixed(2) : 0;
+
+    window.onload = () => {
+      document.getElementById('stats').innerHTML = `<strong>Total Wins:</strong> ${totalWins} | <strong>Total Losses:</strong> ${totalLosses} | <strong>Accuracy:</strong> ${overallAccuracy}%`;
+
+      const ctx1 = document.getElementById('resultsChart').getContext('2d');
+      const ctx2 = document.getElementById('accuracyChart').getContext('2d');
+
+      new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: allDates,
+          datasets: [
+            {
+              label: 'Wins',
+              data: allDates.map(d => winCounts[d] || 0),
+              borderColor: 'limegreen',
+              backgroundColor: 'rgba(50,205,50,0.2)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: 'Losses',
+              data: allDates.map(d => lossCounts[d] || 0),
+              borderColor: 'crimson',
+              backgroundColor: 'rgba(220,20,60,0.2)',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          animation: { duration: 1000, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { labels: { color: getComputedStyle(document.body).color } }
+          },
+          scales: {
+            x: { ticks: { color: getComputedStyle(document.body).color } },
+            y: { ticks: { color: getComputedStyle(document.body).color } }
+          }
+        }
+      });
+
+      new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: allDates,
+          datasets: [{
+            label: 'Accuracy (%)',
+            data: allDates.map(d => accuracy[d] || 0),
+            borderColor: 'deepskyblue',
+            backgroundColor: 'rgba(0,191,255,0.2)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: { duration: 1000, easing: 'easeInOutCubic' },
+          plugins: {
+            legend: { labels: { color: getComputedStyle(document.body).color } }
+          },
+          scales: {
+            x: { ticks: { color: getComputedStyle(document.body).color } },
+            y: { ticks: { color: getComputedStyle(document.body).color } }
+          }
+        }
+      });
+    };
+
+    
+}
+   
+    function toggleTheme_z() {
+      const dark = document.body.classList.toggle('dark-mode');
+      document.querySelector('.toggle-button').textContent = dark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    }
+    analysis3(rawData)
+  </script>
+
+  <button class="toggle-button" onclick="toggleTheme()">Switch to Dark Mode</button>
+  <div class="st_and_ac">
+<div id="stats"></div>
+<h2>Wins vs Losses Per Day</h2>
+<canvas id="resultsChart"></canvas>
+<h2>Accuracy Per Day</h2>
+<canvas id="accuracyChart"></canvas>
+
+</div>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 let date2=18
 let date1=17
+let state__p='leave'
 
 function storeInfo(key, value) {
     localStorage.setItem(key, value);
@@ -60,7 +61,6 @@ function en(text, key) {
 }
 
 
-let theme=accessInfo('theme_+-----')
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -71,21 +71,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if the <link> element exists
     if (linkElement) {
       // Change its href attribute to the new stylesheet path
+      if (!linkElement.href=="css/lgin.css"){
       linkElement.href = newHref;
-      console.log(`Stylesheet changed to: ${newHref}`);
+      console.log(`Stylesheet changed to: ${newHref}`);}
     } else {
       console.error('Stylesheet link not found.');
     }
   }
   
   let theme=accessInfo('theme_+-----')
-  if (theme){
-    if (theme=='Light'){
-      changeStylesheet('css/Llgin.css')
-    }else{
-      changeStylesheet('css/lgin.css')
-    }
-  }})
+  })
 
 
 
@@ -239,7 +234,7 @@ window.addEventListener('beforeunload', setLastVisitTime);
 function logout(){
   storeInfo(en('state',date2),'')
   storeInfo(en('password',date1),'')
-  storeInfo(en('phone',date1),'')
+  storeInfo(en('grade',date1),'')
   storeInfo(en('username',date1),'')
   storeInfo(en('email',date1),'')
   storeInfo(en('logged',date1),'')

@@ -3,7 +3,9 @@
     padding: 0;
     margin: 0;
   }
-  
+   .m2{
+    margin-top: 1px;
+   }
 
   body {
     font-family: Arial, sans-serif;
@@ -17,6 +19,41 @@
     padding-top: 20px;
     padding-bottom: 20px;
   }
+
+     .back-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: transparent;
+      border: 2px solid #00aaff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .back-button:hover {
+      transform: scale(1.15) rotate(-10deg);
+      box-shadow: 0 0 15px 2px #00aaff;
+    }
+
+    .back-button svg {
+      fill: #00aaff;
+      width: 24px;
+      height: 24px;
+      transition: transform 0.3s ease;
+    }
+
+    .back-button:hover svg {
+      transform: translateX(-4px);
+    }
+
+
   
   .registration-container {
     background: #ffffff; /* White container */

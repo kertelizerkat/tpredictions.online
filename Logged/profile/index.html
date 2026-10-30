@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TPREDICTIONS | PROFILE</title>
+  <link rel="stylesheet" href="css/styles.css">
+   <script>
+  
+    if (localStorage.getItem("theme_+-----")=='Light'){
+        const stylesheet =document.querySelector("link");
+            stylesheet.href='css/styles2.css'
+
+    }
+</script>
+<style>
+  .destroy_{
+    display:none;
+    opacity:0;
+    width:0;
+    height:0;
+    visibility: hidden;
+  }
+  .whitec{
+    color:white;
+  }
+</style>
+  <script src="js/script.js" defer></script>
+  <link rel="shortcut icon" href="../../favicon.ico" type="image/x-icon">
+  <script src="js/mod.js"></script>
+  <script src="../js/taiwan.js"></script>
+  <script src="../../js/allhandler.js"></script>
+</head>
+
+<body class="">
+   <header class="flex ">
+      <div class="logo flex items-center gap-3 animate-fade-in-down">
+        <div class="logo_img ">
+          <img style="border-radius: 50%;width:50px;height:50px" src="../../favicon.ico" alt="">
+        </div>
+        <div class="logo_name" style="text-transform: uppercase;"></div>
+      </div>
+      <nav>
+        <ul class="">
+          <li><a href="../index.html" id="Dashboard" >Dashboard</a></li>
+          <li><a href="#" class="active_">Profile</a></li>
+         
+          <li><a href="../users/index.html">Users</a></li>
+           <li><a href="../posts/index.html" id="BTS" class="unactive_">Trends</a></li>
+          <li style="margin-right: 20px;"><a id="lgout"style="color:white" onclick="logout()" href="#">Log Out</a></li>
+        </ul>
+        <script>
+    if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
+            let lgo= document.getElementById('lgout')
+            lgo.style.color= "rgba(0,0,0,0.8)"
+
+          }
+        </script>
+       
+        <button id="menu-btn" class="fixed top-7 right-4 z-50 flex flex-col gap-1">
+          <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar1"></div>
+          <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar2"></div>
+          <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar3"></div>
+        </button>
+
+    
+
+        <!-- Overlay -->
+        <div id="overlay"
+          class="fixed inset-0 bg-white/60 backdrop-blur-md z-40 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out">
+        </div>
+
+        <div id="side-menu"
+          class="fixed top-0 right-0 w-80 h-full bg-white bg-opacity-80 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-l border-white/50 z-50 transform translate-x-full transition-transform duration-500 ease-in-out flex flex-col p-6 gap-6">
+          <div class="flex justify-between items-center">
+
+            <h2 id="hmen" class="text-2xl font-extrabold text-gray-900 whitec"><img
+                style="height:50px;width:50px; border-radius: 50%;display: inline;" src="../../favicon.ico">
+              </h2>
+            <button id="close-btn" class="text-2xl font-bold text-gray-500 hover:text-gray-900 whitec">×</button>
+          </div>
+          <a href="../index.html"
+            class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
+            🏠 <span>Dashboard</span>
+          </a>
+          <a href="#"
+            class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 ">
+            👤 <span>Profile</span>
+          </a>
+          
+          <a href="../users/index.html"
+            class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
+            👥 <span>Users</span>
+          </a>
+          <a href="../posts/index.html"
+            class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
+            📈 <span>Trends</span>
+          </a>
+          <a href="#" onclick="logout()"
+            class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
+            🚪 <span>Log Out</span>
+          </a>
+        </div>
+       
+      </nav>
+
+
+    </header>
+  <div class="container c8">
+   
+     <script>
+    
+          if (localStorage.getItem("theme_+-----")=='Dark'){
+              const stylesheet =document.getElementById("menu-btn");
+                  stylesheet.innerHTML=` <div class="w-6 h-0.5 bg-white transition-all duration-300" id="bar1"></div>
+              <div class="w-6 h-0.5 bg-white transition-all duration-300" id="bar2"></div>
+              <div class="w-6 h-0.5 bg-white transition-all duration-300" id="bar3"></div>`
+
+              document.getElementById('overlay').setAttribute('class','fixed inset-0 bg-black/60 backdrop-blur-md z-40 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out')
+              document.getElementById('hmen').setAttribute('class','text-2xl font-extrabold text-white-900')
+              
+              document.getElementById('side-menu').setAttribute('class','fixed top-0 right-0 w-80 h-full bg-black bg-opacity-70 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.1)] border-l border-white/50 z-50 transform translate-x-full transition-transform duration-500 ease-in-out flex flex-col p-6 gap-6')
+
+               document.querySelectorAll('.whitec').forEach(element =>{
+                element.setAttribute('class','flex items-center gap-2 text-lg text-white-700 hover:text-indigo-600 transition-all duration-200 whitec')
+              })
+
+
+          }
+        </script>
+
+    <div class="smoother">
+      <div class="line"></div>
+    </div>
+
+    <main class="profile-main" style="position: relative;">
+        <div id='mainloader2' class="loading-container11 destroy_">
+        <div class="title11">
+          <span style="font-size: 30px" class="letter11">S</span>
+          <span style="font-size: 30px" class="letter11">i</span>
+          <span style="font-size: 30px" class="letter11">t</span>
+          <span style="font-size: 30px" class="letter11">e</span>
+          <span style="font-size: 30px" class="letter11">&nbsp; b</span>
+          <span style="font-size: 30px" class="letter11">u</span>
+          <span style="font-size: 30px" class="letter11">s</span>
+          <span style="font-size: 30px" class="letter11">y</span>
+        </div>
+        <!-- <div class="loader11"></div> -->
+        <div id="username_loader11" class="subtitle11"></div>
+        <div id="state_loader11" class="subtitle11"></div>
+
+        <div class="checkbox-container11">
+          <!-- <div id="vdata" class="check-box  hide_bx11">Validation</div> -->
+          <!-- <div id="fdata__" class="check-box  hide_bx11">Fetching Data</div> -->
+          <!-- <div id="ldata" class="check-box  hide_bx11">Loading Data</div> -->
+        </div>
+        <div class="particles11">
+          <div class="particle11" style="left: 10%; animation-delay: 0s;"></div>
+          <div class="particle11" style="left: 25%; animation-delay: 0.8s;"></div>
+          <div class="particle11" style="left: 40%; animation-delay: 1.6s;"></div>
+          <div class="particle11" style="left: 60%; animation-delay: 2.4s;"></div>
+          <div class="particle11" style="left: 80%; animation-delay: 3.2s;"></div>
+          <div class="particle11" style="left: 95%; animation-delay: 4s;"></div>
+        </div>
+
+    </div>
+
+      <!-- Grid container to share space between the cover and info -->
+      <div class="cover-container">
+        <img style="width: 60%;" src="../../favicon.ico" alt="cover" class="cover">
+      </div>
+
+      <div class="profile-info">
+        <div class="profile-section">
+          <img src="../../sources/AvatarD.png" alt="avatar" class="avatar">
+          <script>
+              if (localStorage.getItem("theme_+-----")=='Dark'){
+                
+              }else{
+                document.querySelector('.avatar').setAttribute('src','../../sources/AvatarD2.png')
+                document.querySelector('.avatar').style.borderColor='rgba(0,0,0,0.6)'
+              }
+
+          </script>
+         
+          <div class="details">
+            <h2>@ <span id="username"></span></h2>
+            <p ><span id="bio"  spellcheck="false"
+     autocorrect="off"
+     autocapitalize="off"
+     data-gramm="false"
+     data-enable-grammarly="false" >Write your Bio here..</span> <img id="icon_f" style="display: inline;border-radius: 50%;" width="30" height="30" src="../../favicon.ico" alt=""> </p>
+            <p id='Location_'  spellcheck="false"
+     autocorrect="off"
+     autocapitalize="off"
+     data-gramm="false"
+     data-enable-grammarly="false"  >Address </p>
+          </div>
+        </div>
+         <!-- Tabs Navigation -->
+        <div class="info-tabs">
+          <button class="tab active" onclick="showTab('contact', event)">Contact</button>
+          <button class="tab" onclick="showTab('skills', event)">Skills</button>
+          <button class="tab" onclick="showTab('Bioo', event)">About</button>
+        </div>
+      </div>
+      
+      <div class="info_">
+       
+
+        <!-- Info Content: Contact -->
+        <div class="info-content " id="contact">
+          <div class="info-card">
+            <strong>Email:</strong>
+            <p id="email"></p>
+          </div>
+          <div class="info-card">
+            <strong>Phone:</strong>
+            <p id="phone"></p>
+          </div>
+          <div class="info-card">
+            <strong>Status:</strong>
+            <p id="verified-status" style="color:#007ACC">checking...</p>
+          </div>
+          <div class="info-card">
+            <strong>Website:</strong>
+            <p><a id="website" style="width:100%" href="#"
+                target="" spellcheck="false"
+     autocorrect="off"
+     autocapitalize="off"
+     data-gramm="false"
+     data-enable-grammarly="false" > https://</a></p>
+          </div>
+        </div>
+
+        <!-- Info Content: Skills -->
+        <div class="info-content hidden" id="skills">
+        
+          <div class="info-card">
+            <strong>Tools:</strong>
+            <p>Git and  VS Code</p>
+          </div>
+          <div class="info-card">
+            <strong>others</strong>
+            <p>...</p>
+          </div>
+        </div>
+
+        <!-- Info Content: Bio -->
+
+        <div class="info-content hidden" id="Bioo">
+          <div class="info-card">
+            <strong>Bio:</strong>
+            <p>Delivering accurate and data-driven soccer match predictions.</p>
+          </div>
+          <div class="info-card">
+            <strong>Favorite Leagues:</strong>
+            <p>Premier League, La Liga, Serie A, Bundesliga, UEFA Champions League</p>
+          </div>
+          <div class="info-card">
+            <strong>Philosophy:</strong>
+            <p>It’s not gambling when you play with knowledge.</p>
+          </div>
+          <div class="info-card">
+            <strong>Best Win Streak:</strong>
+            <p>Achieved a personal best of 169 correct predictions!</p>
+          </div>
+        </div>
+      </div>
+
+   <h1 class="ts-heading"> </h1>
+      <label class="ts-switch">
+        <input type="checkbox" id="ts-theme-toggle">
+         <span class="ts-slider"></span>
+      </label>
+  <style>
+    .edit-save-btn{
+      display: flex;
+      width:90%;
+      justify-content: center;
+      align-items: center;
+       /* border: 1px solid aqua; */
+      /* gap:20px; */
+    }
+    .pbtn{
+      border: 1px solid aqua;
+      padding: 5px 10px;
+      border-radius: 0 10px;
+      margin: 0 10px;
+      cursor:pointer
+
+    }
+    .edit{
+      color: #007ACC;
+      font-weight: bold;
+    }
+    .save{
+      color: rgba(0,255,0);
+      font-weight: bold;
+      display:none;
+    }
+    .save:hover{
+      background-color: rgba(0,255,0,0.1);
+    }
+    .edit:hover{
+      background-color: rgba(0,0,255,0.1);
+    }
+    #profile-save-status{font-size:.82rem;min-height:1.2em;margin-left:.35rem}
+    #profile-save-status.profile-save-pending{color:#a16207}
+    #profile-save-status.profile-save-success{color:#15803d}
+    #profile-save-status.profile-save-error{color:#b91c1c}
+    .pbtn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+    .pbtn:disabled{opacity:.6;cursor:wait}
+  </style>
+  <div class="edit-save-btn">
+    <button id="edit" class="edit pbtn" type="button">Edit profile</button>
+    <button id="save" class="save pbtn" type="button">Save profile</button>
+    <span id="profile-save-status" role="status" aria-live="polite"></span>
+  </div>
+ <script>
+  const editButton = document.getElementById('edit');
+  const saveButton = document.getElementById('save');
+  const saveStatus = document.getElementById('profile-save-status');
+  const profileFields = {
+    username: document.getElementById('username'),
+    bio: document.getElementById('bio'),
+    address: document.getElementById('Location_'),
+    website: document.getElementById('website'),
+  };
+
+  function setProfileEditable(editable) {
+    Object.values(profileFields).forEach(field => {
+      field.contentEditable = editable ? 'true' : 'false';
+      if (editable) {
+        field.style.border = localStorage.getItem('theme_+-----') === 'Dark' ? '1px solid white' : '1px solid #0056b3';
+        field.style.borderRadius = '4px';
+        field.style.padding = '4px';
+      } else {
+        field.style.removeProperty('border');
+        field.style.removeProperty('border-radius');
+        field.style.removeProperty('padding');
+      }
+    });
+    editButton.hidden = editable;
+    saveButton.hidden = !editable;
+    editButton.style.display = editable ? 'none' : 'inline-flex';
+    saveButton.style.display = editable ? 'inline-flex' : 'none';
+  }
+
+  function setWebsiteLink(value) {
+    const website = profileFields.website;
+    const text = String(value || '').trim();
+    website.textContent = text;
+    try {
+      const candidate = /^https?:\/\//i.test(text) ? text : (text ? `https://${text}` : '');
+      const parsed = candidate ? new URL(candidate) : null;
+      website.href = parsed && ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '#';
+      website.target = website.href === '#' ? '' : '_blank';
+      website.rel = 'noopener noreferrer';
+    } catch (_) {
+      website.href = '#';
+      website.removeAttribute('target');
+    }
+  }
+
+  function cacheProfile(profile) {
+    try {
+      storeInfo(en('username', date1), en(profile.username, date1));
+      storeInfo(en('bio', date1), en(profile.bio || '', date1));
+      storeInfo(en('website', date1), en(profile.website || '', date1));
+      storeInfo(en('address', date1), en(profile.address || '', date1));
+    } catch (error) {
+      // The server copy remains authoritative if a local cipher cannot encode a character.
+      console.warn('Profile saved on the server; local cache could not encode all characters.', error);
+    }
+  }
+
+  editButton.addEventListener('click', () => {
+    window.profileEditStarted = true;
+    saveStatus.textContent = '';
+    setProfileEditable(true);
+    profileFields.username.focus();
+  });
+
+  saveButton.addEventListener('click', async () => {
+    const encryptedPassword = accessInfo(en('password', date1));
+    const encryptedEmail = accessInfo(en('email', date1));
+    const password = encryptedPassword ? de(encryptedPassword, date1) : '';
+    const email = encryptedEmail ? de(encryptedEmail, date1) : '';
+    const profile = {
+      username: profileFields.username.textContent.trim(),
+      bio: profileFields.bio.textContent.trim(),
+      address: profileFields.address.textContent.trim(),
+      website: profileFields.website.textContent.trim(),
+      password,
+      email,
+    };
+    saveButton.disabled = true;
+    saveStatus.textContent = 'Saving profile…';
+    saveStatus.className = 'profile-save-pending';
+    try {
+      const response = await fetch(line + '/saveP', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify(profile),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.message !== 'Saving Passed!') {
+        throw new Error(result.message || 'Profile could not be saved.');
+      }
+      const saved = result.profile || profile;
+      profileFields.username.textContent = saved.username;
+      profileFields.bio.textContent = saved.bio || '';
+      profileFields.address.textContent = saved.address || '';
+      setWebsiteLink(saved.website || '');
+      const logoName = document.querySelector('.logo_name');
+      if (logoName) logoName.textContent = saved.username;
+      cacheProfile(saved);
+      setProfileEditable(false);
+      saveStatus.textContent = 'Profile saved.';
+      saveStatus.className = 'profile-save-success';
+    } catch (error) {
+      saveStatus.textContent = error.message || 'Profile could not be saved. Please try again.';
+      saveStatus.className = 'profile-save-error';
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+
+  setProfileEditable(false);
+ </script>
+      
+
+  <style>
+    :root {
+      --ts-bg-color: transparent;
+      --ts-text-color: #fff;
+      --ts-bg-color-slider: rgba(0,0,0.4);
+
+    }
+
+   
+
+
+    .ts-heading {
+      margin-bottom: 30px;
+      color: #888;
+      margin-top: 30px;
+    }
+
+    .ts-switch {
+      position: relative;
+      display: inline-block;
+      width: 70px;
+      height: 34px;
+    }
+
+    .ts-switch input {
+      display: none;
+    }
+
+    .ts-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc ;/* #ccc; */
+      transition: 0.4s;
+      border-radius: 34px;
+     
+    }
+
+    .ts-slider::before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    .ts-switch input:checked + .ts-slider {
+      background-color: rgba(36, 35, 35, 0.253);
+      border:1px solid #ccc
+    }
+
+    .ts-switch input:checked + .ts-slider::before {
+      transform: translateX(35px);
+    }
+  </style>
+<script>
+ const tsToggle = document.getElementById('ts-theme-toggle');
+    const tsCurrentTheme = localStorage.getItem('theme_+-----');
+    let tsh=document.querySelector('.ts-heading')
+    tsh.textContent=`${localStorage.getItem('theme_+-----')} Mode` + " : ."
+
+    if (tsCurrentTheme === 'Dark') {
+      tsToggle.checked = true;
+    }
+
+    tsToggle.addEventListener('change', () => {
+      if (tsToggle.checked) {
+    
+        
+        localStorage.setItem('theme_+-----', 'Dark');
+        window.location.reload(false)
+
+
+      } else {
+   
+        localStorage.setItem('theme_+-----', 'Light');
+        window.location.reload(false)
+
+      }
+    });
+
+</script>
+    </main>
+     <script>
+      function showTab(tabId, event) {
+        document.querySelectorAll('.info-content').forEach(div => div.classList.add('hidden'));
+        document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabId).classList.remove('hidden');
+        event.currentTarget.classList.add('active');
+      }
+    </script>
+
+    <style>
+      /* Container uses grid on large screens */
+    
+    </style>
+
+    <!-- JavaScript for Tab Functionality -->
+    <script>
+      function showTab(tabId, event) {
+        // Hide all info content blocks
+        document.querySelectorAll('.info-content').forEach(div => div.classList.add('hidden'));
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+        // Show the chosen tab
+        document.getElementById(tabId).classList.remove('hidden');
+        // Set active tab button styling
+        event.target.classList.add('active');
+      }
+    </script>
+
+
+    <footer class="mt-12 text-center text-sm text-gray-500">
+      <p>&copy; <span id="current-year"></span> TPREDICTIONS . All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script src="js/verify.js?v=20261026-profile-sync"></script>
+  <script>
+  
+  </script>
+  <script>
+
+    document.getElementById("current-year").textContent = new Date().getFullYear();
+  </script>
+  <script src="../../js/onchecker.js"></script>
+</body>
+
+</html>

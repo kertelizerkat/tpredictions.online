@@ -1,12 +1,164 @@
 
+let theme='none';
+window.addEventListener('DOMContentLoaded',()=>{
+  
+  const storageKey = 'theme_+-----';
+   theme = localStorage.getItem(storageKey);
+    
+    
+    
+    
+    if (!theme){
+      const currentPath = window.location.pathname;
+        // localStorage.setItem('prev_path',currentPath)
+
+       basePath= currentPath.split('/')
+       let npath=''
+        for ( i in basePath){
+          npath=npath + '/' + basePath[i]
+          // console.log(npath)
+          if (basePath[i]=='WEBAPP' ){
+            break
+          }
+      }
+      // console.log(npath)
+
+      window.location.assign(`${getHomePath()}/theme.html`)
+    
+    }
+})
 let line="https://sculpin-charming-directly.ngrok-free.app"
 // line="http://localhost:5700"
-let theme_m='Light'
-localStorage.setItem('theme_+-----', theme_m)
+// let theme_m=''
+// localStorage.setItem('theme_+-----', theme_m)
 let access_="domaContent"
 let online=false
+let cpath = window.location.pathname;
+let bpath;
+if (line=='https://sculpin-charming-directly.ngrok-free.app'){
+  // bpath='https://tpredictions.online'
+  bpath='https://kertelizerkat.github.io/tpredictions.online'
+}else{
+
+}
+
+
+
+let pp=localStorage.getItem('Freeprev_path')
+if (pp){}else{
+  pp=`${getHomePath()}/Logged/posts/index.html`
+}
+
+let k2=cpath.split('/')
+   
+   k2=k2[k2.length-2]
+
+let k9=pp.split('/')
+   
+   k9=pp[pp.length-2]
+
+
+   
+if ((k2=='Logged'|| k2=='profile') || (k9=='Logged'|| k9=='profile'  )){
+  let str1=localStorage.getItem(en('phone', date1))
+  let str2=localStorage.getItem(en('username', date1))
+  let str3=localStorage.getItem(en('email', date1))
+  let str4=localStorage.getItem(en('logged', date1))
+  let str5=localStorage.getItem('matchSummary')
+  let str6=localStorage.getItem('matchSummary2')
+
+  if(str1 && str2 && str3 &&  str4 && str5 && str6 ){
+    localStorage.setItem('UseLogOffline','allow')
+
+  }else{
+    if(str1 && str2 && str3 && str4){
+      localStorage.setItem('UseprofileOffline','allow')
+    }else{
+      localStorage.setItem('UseprofileOffline','Disallow')
+
+    }
+
+  }
+    
+}else{
+  localStorage.setItem('UseLogOffline','Disallow')
+}
+  
+
+
+if(pp==cpath){
+  let homepath= getHomePath()
+  localStorage.setItem('Freeprev_path',`${homepath}/index.html`)
+  localStorage.setItem('typeOfPath','Return to Home')
+
+}
+
+
+if (k2=='posts' ){
+  localStorage.setItem('Freeprev_path',cpath)
+  localStorage.setItem('typeOfPath','Return to Trends')
+
+
+}
+
+if (k2=='login' ){
+  localStorage.setItem('Freeprev_path',cpath)
+  localStorage.setItem('typeOfPath','Return to Login')
+
+
+}
+
+if (k2=='Logged' ){
+  if(localStorage.getItem('UseLogOffline')=='allow'){
+     localStorage.setItem('Freeprev_path',cpath)
+  localStorage.setItem('typeOfPath','Return to Dashboard')
+  }
+  
+
+
+}
+
+if (k2=='profile' ){
+  if(localStorage.getItem('UseLogOffline')=='allow' || localStorage.getItem('UseprofileOffline')=='allow')
+  localStorage.setItem('Freeprev_path',cpath)
+  localStorage.setItem('typeOfPath','Return to Profile ')
+
+
+}
+
+if(!localStorage.getItem('Freeprev_path')){
+  let homepath= getHomePath()
+  localStorage.setItem('Freeprev_path',`${homepath}/index.html`)
+  localStorage.setItem('typeOfPath','Return to Home')
+}
+
+
+
+
+function getHomePath(){
+  basePath= window.location.pathname.split('/')
+
+       let npath=''
+       if (line=='https://sculpin-charming-directly.ngrok-free.app'){
+
+        npath=bpath
+       }else{
+             for ( i in basePath){
+          npath=npath + '/' + basePath[i]
+          // console.log(npath)
+          if (basePath[i]=='WEBAPP'){
+            break
+          }
+      }
+       }
+       
+    return npath
+}
+
+
 
 document.addEventListener('DOMContentLoaded', function() {
+  
     fetch(line+ '/status', {
         method: 'POST',
         headers: {
@@ -16,6 +168,9 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .then(response => response.json())
     .then(data => {
+
+
+         
         if (data.message=='okay'){
            
           localStorage.setItem('online','true')
@@ -25,18 +180,41 @@ document.addEventListener('DOMContentLoaded', function() {
        
         }
         localStorage.setItem('online','true')
+        localStorage.setItem('continueoff','Disallow')
+
+
       
        
     })
     .catch(error => {
         console.log(error)
         localStorage.setItem('online','false')
+        let ll=localStorage.getItem('Freeprev_path').split('/')
+           ll=ll[ll.length-2]
+        let nn=window.location.pathname
+           nn=nn[nn.length-2]
+          
+        if (state__p=='leave' || (localStorage.getItem('UseLogOffline')=='allow' && (ll=='profile' || (ll=='Logged' ))  )  || (localStorage.getItem('UseLogOffline')=='allow' && ll=='profile' )    ){
+          
+         localStorage.setItem('continueoff','allow')
+         
+        }else{
+
+        if(nn=='profile' || nn=='Logged'){
+          let homepath= getHomePath()
+          localStorage.setItem('Freeprev_path',`${homepath}/index.html`)
+          localStorage.setItem('typeOfPath','Return to Home ')
+
+        }
+
+
+          
         document.querySelector('html').innerHTML=`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechNify | offline</title>
+    <title>TPREDICTIONS | OFFLINE</title>
     
     <style>
         body{
@@ -72,7 +250,8 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .headl{
     font-size: 2rem;
-    color: aqua;
+    color: white;
+    letter-spacing: 5px;
 }
 .hide{
     visibility: hidden;
@@ -414,7 +593,7 @@ h5{
 </head>
 <body>
     <div class="loader" id="loader">
-        <div class="headl">TechNify</div>
+        <div class="headl">TPREDICTIONS </div>
         
         <div class="spinner-box">
             <div class="blue-orbit leo">
@@ -435,9 +614,12 @@ h5{
         </div>
 <div class="inf">
           <h1>We Are Offline</h1>
-          <p>We're temporarily disconnected, but we'll be back shortly. Stay tuned!</p>
+          <br>
+          
+          <p>This section is temporarily disconnected!</p><br>
+          <p><a style='color: red;text-decoration:underline;' href=${localStorage.getItem('Freeprev_path')}>${localStorage.getItem('typeOfPath')} </a></p><br><br><br>
           <footer>
-              <h5>Copyright 2025 &copy; TechNify</h5>
+              <h5>Copyright 2025 &copy; TPREDICTIONS . All rights reserved</h5>
             </footer>
         </div>
     </div>
@@ -451,7 +633,6 @@ h5{
     
 </body>
 </html>`
-
 function check(){
   fetch(line+ '/status', {
     method: 'POST',
@@ -470,8 +651,13 @@ function check(){
     
    
     }
+    if (false) {
 
-    window.location.reload()
+    }else{
+      window.location.reload()
+    }
+
+    
    
 })
 .catch(error => {
@@ -480,150 +666,76 @@ function check(){
 }
 setInterval(check,5000)
 
+}
+
+
+
+
             
     });
 })
-if (!(localStorage.getItem('theme_+-----'))){
-    let pagbody= document.querySelector('html')
-    let pagbodyC=pagbody.innerHTML
-    let pagbody2= document.querySelector('body')
-    let pageCode= pagbody.innerHTML
-    // let theme='none';
-    const storageKey = 'theme_+-----';
-    let userInput = localStorage.getItem(storageKey);
-    theme= userInput
+
+
+
+
     
     
-    if (!userInput){
-         pagbody.innerHTML=`<head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TechNify | Theme</title>
-        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-        <style>
-            body{
-                background-color: black;
-                display: flex;
-                align-items: center;
-                height:100vh;
-                width:100vw;
-                justify-content: center;
-                color: white;
-                flex-direction: column;
-            }
-            .container{
-                width:200px;
-                height:100px;
-                border: 1px solid white;
-                border-radius: 20px;
-                border-bottom: 1px solid transparent;
-                border-top: 1px solid transparent;
-                display: flex;
-                justify-content: space-between;
-                padding: 0 30px;
-                align-items: center;
-                gap: 20px
     
-            }
+   
     
-            .dark,.light{
-              height:50px
-              ;
-              display: flex;
-              width:50%;
-             
-              align-items: center;
-              justify-content: center
-              ;
-              border-radius: 20px;
-              cursor: pointer;
-            }
-            .head{
-                color: rgb(255,255,255);
-                font-size: 1.5rem;
-                margin-bottom: 20px;
-            }
-            .dark{
-                border: 1px solid white;
-            }
-            .light{
-                border: 1px solid aqua;
-                color: black;
-                background-color: rgba(255,255,255,0.9);
-                font-weight: 900;
-            }
-            body{
-                overflow: hidden;
-            }
-            .tk{
-                animation: colorFlow 5s alternate;
-            }
-            @keyframes colorFlow {
-        0% {
-            color: black;
-        }
-    
-        25% {
-            color: white
-        }
-    
-        50% {
-            color: transparent;
-            -webkit-text-stroke: 1px white;
-        }
-    
-        70% {
-            color: transparent;
-            -webkit-text-stroke: 1px white;
-        }
-    
-        100% {
-            color: white;
-        }
-    }
-    
-        </style>
-    </head>
-    <body>
-    <script src="loader.js"></script>
-        <div class="head">
-            Choose your <span class="tk">TechNify</span> Theme
-        </div>
-        <div class="container">
-              <div onclick='dark()' class="dark">Dark</div>
-              <div onclick='light()' class="light">Light</div>
-        </div>
-    </body>
-    `
-    
-    
-    }else{
-        
-        if (theme=='Light'){
-        pagbody2.style.color='white'
-    
-        document.querySelectorAll('select').forEach(element =>{
-            element.style.color= 'black'
-        })
-        }
-    
-    
-    }
-    
-    function dark(){
-        // alert('Dark')
-        localStorage.setItem(storageKey, 'Dark');
-        theme= 'Dark'
-        window.location.href = 'index.html'
-    
-    
-    }
-    function light(){
-        localStorage.setItem(storageKey, 'Light');
-        theme='Light'
-        window.location.href = 'index.html'
-    }
-    
-    
-        
+
+
+
+// (function() {
+//   // Store the original body content to restore it later.
+//   let body=document.querySelector('body')
+//   var originalContent = body.innerHTML;
+
+//   // Create an overlay message element.
+//   var messageDiv = document.createElement("div");
+//   messageDiv.id = "compatibilityMessage";
+//   messageDiv.style.cssText =
+//     "position: fixed; top: 0; left: 0; width: 100%; height: 100%; " +
+//     "background: #f8f8f8; display: flex; flex-direction: column; " +
+//     "justify-content: center; align-items: center; text-align: center; " +
+//     "z-index: 9999; opacity: 0;";
+//   messageDiv.innerHTML =
+//     '<div style="padding: 20px;">' +
+//       '<h2 style="color: #333;">Sorry, your device width is not compatible.</h2>' +
+//       '<p style="color: #555;">Please use a wider screen to enjoy this page.</p>' +
+//       '<div style="margin-top: 20px; width: 50px; height: 50px; ' +
+//            'border: 6px solid #007bff; border-top: 6px solid #fff; ' +
+//            'border-radius: 50%; animation: spin 1s linear infinite;"></div>' +
+//     '</div>';
+
+//   // You may need to supply the CSS keyframes for the spinner animation via a stylesheet:
+//   // @keyframes spin {
+//   //   from { transform: rotate(0deg); }
+//   //   to { transform: rotate(360deg); }
+//   // }
+
+//   // Helper function to wrap Tainwan's animation call.
+//   // Adjust these options as required by your Tainwan library.
+//   function animateElement(element, targetProps, duration, onComplete) {
+//     Tainwan.animate(element, targetProps, {
+//       duration: duration,
+//       easing: "easeOut",
+//       onComplete: onComplete || function() {}
+//     });
+//   }
+
+  // The function that checks window.innerWidth and toggles the conte
+
+function register(){
+     window.location.assign(`${getHomePath()}/register/index.html`)
+  }
+
+
+
+  function scrollDown100px() {
+  window.scrollBy({
+    top: 250,
+    left: 0,
+    behavior: 'smooth' // Optional: makes the scroll animated
+  });
 }

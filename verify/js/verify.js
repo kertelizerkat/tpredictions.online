@@ -1,5 +1,7 @@
 let prev_state_s = accessInfo(de('state',date2))
-if (prev_state_s){}else{
+if (prev_state_s){
+
+}else{
     prev_state_s='login'
 }
 storeInfo(en('state',date2), 'verify')
@@ -36,12 +38,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (verificationCodeInput.value.length === 5) {
          
             const verificationCode = verificationCodeInput.value;
-            const email= accessInfo(en('email',date2))
+            const email=  accessInfo(en('email',date2))
             let data={ verificationCode: verificationCode, email_P: email   }
             // verificationCodeInput.value=''
             
             
-            fetch('https://sculpin-charming-directly.ngrok-free.app/verify', {
+            fetch(line+'/verify', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -54,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data['message']=='varified') {
                     messageElement.textContent = 'Verification successful!';
                     messageElement.style.color = 'green';
-                    window.location.assign("../login/")
+                    window.location.assign("../login/index.html")
                     // console.error('Error:', 'success');
                 } 
                     if (data['message']== 'incorrect'){
@@ -78,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             })
             .catch(error => {
-                messageElement.textContent = 'Verification failed, techNifu server closed';
+                messageElement.textContent = 'Verification failed';
                 messageElement.style.color = 'red';
 
             });
@@ -91,10 +93,10 @@ document.addEventListener('DOMContentLoaded', function() {
         resendButton.disabled = true;
         countdownElement.style.display = 'block';
         startCountdown();
-        const email= accessInfo(en('email',date2))
+        const email=  accessInfo(en('email',date2))
         let data={ email_P: email}
         // Add your code to resend the verification code here
-        fetch('https://sculpin-charming-directly.ngrok-free.app/resend_c', {
+        fetch(line+'/resend_c', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -104,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.message=='verified'){
-                window.location.assign("../login/")
+                window.location.assign("../login/index.html")
             }
            
         })
@@ -131,17 +133,19 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-
-const emailC= de(accessInfo(en('email',date1)),date1)
+// alert(accessInfo(en('email',date2)))
+let emailC= accessInfo(en('email',date2))
 if (emailC){
+    // alert(emailC)
     document.querySelector('.eml').textContent = emailC
 }else{
-    
-    window.location.assign('../login')
+    emailC=  de(accessInfo(en('email',date1)),date1)
+    if (emailC){}else{
+    window.location.assign('../login')}
 }
 let dataC={ email_P: emailC + "+check"  }
 
-fetch('https://sculpin-charming-directly.ngrok-free.app/resend_c', {
+fetch(line+'/resend_c', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json'

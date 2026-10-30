@@ -1,5 +1,6 @@
 let date2=18
 let date1=17
+let state__p='leave'
 function en(text, key) {
   const symbols = "~!@#$%^&*()_+=-{}[]\\|'\"<>,.?/;:` \n";
   const letters = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
@@ -186,3 +187,178 @@ clearLocalStorageIfExpired();
 
 // Set the last visit time when the user leaves the site
 window.addEventListener('beforeunload', setLastVisitTime);
+
+
+
+function predict() {
+
+
+  let qry = document.getElementById("input");
+  
+  let btn = document.querySelector('.btn33');
+  let cencon = document.getElementById("cencon");
+  let out = document.querySelector(".output");
+
+
+    
+ 
+  
+
+  let holder = document.querySelector(".holder");
+
+  let bordero = out.style.border;
+  let inno = out.innerHTML;
+  
+
+  
+
+if (qry.value ) {
+    // qry.setAttribute("placeholder","e.g. " + qry.value)
+    // qry.value="";
+    // out.innerHTML=''
+    let ocikon=cencon.innerHTML
+
+    let color = btn.style.color;
+    let text = btn.textContent;
+    let bgcolor = btn.style.backgroundColor;
+    let animation = btn.style.animationName
+    btn.textContent = "Loading";
+    
+    if (localStorage.getItem("theme_+-----")=='Dark'){
+
+       btn.style.backgroundColor = "transparent";
+       btn.style.color = "#fff"
+    }
+else{
+         btn.style.backgroundColor = "#FFFFFF";
+          btn.style.color = "#000"
+    }
+     
+
+    
+
+
+    
+
+    cencon.innerHTML= `  <div style='background:  inherit;backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);border-radius:40px;z-index:1000000' class="loading-container11">
+        <div class="title11">
+          <span style='font-size:x-large' class="letter11">P</span>
+          <span style='font-size:x-large' class="letter11">r</span>
+          <span style='font-size:x-large' class="letter11">o</span>
+          <span style='font-size:x-large' class="letter11">c</span>
+          <span style='font-size:x-large' class="letter11">e</span>
+          <span style='font-size:x-large' class="letter11">s</span>
+          <span style='font-size:x-large' class="letter11">s</span>
+          <span style='font-size:x-large' class="letter11">i</span>
+          <span style='font-size:x-large' class="letter11">n</span>
+          <span style='font-size:x-large' class="letter11">g...</span>
+       
+        </div>
+        <div class="loader11"></div>
+        <div id="username_loader11" class="subtitle11"></div>
+        <div id="state_loader11" class="subtitle11"></div>
+
+        <div class="checkbox-container11">
+          <!-- <div id="vdata" class="check-box  hide_bx11">Validation</div> -->
+          <!-- <div id="fdata__" class="check-box  hide_bx11">Fetching Data</div> -->
+          <!-- <div id="ldata" class="check-box  hide_bx11">Loading Data</div> -->
+        </div>
+        <div class="particles11">
+          <div class="particle11" style="left: 10%; animation-delay: 0s;"></div>
+          <div class="particle11" style="left: 25%; animation-delay: 0.8s;"></div>
+          <div class="particle11" style="left: 40%; animation-delay: 1.6s;"></div>
+          <div class="particle11" style="left: 60%; animation-delay: 2.4s;"></div>
+          <div class="particle11" style="left: 80%; animation-delay: 3.2s;"></div>
+          <div class="particle11" style="left: 95%; animation-delay: 4s;"></div>
+        </div>
+
+    </div>`+ cencon.innerHTML
+    cencon.style.position= 'relative'
+
+    
+    //holder
+    holder.classList.remove("flex")
+    //input border
+
+    out.style.border = bordero
+    out.innerHTML = inno
+  
+
+
+    let http;
+    
+ 
+    
+  
+
+    http = line+"/individual_receive_message";
+    
+ 
+    console.log(http)
+    fetch(http, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(qry.value)
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("<span id='red'>Something went wrong, Please try again!</span>");
+
+
+
+            }
+       
+            //holder
+            holder.classList.add("flex")
+            
+
+            
+
+            // out.style.border="2px solid rgba(65,25,65)"
+            out.innerHTML = "<span id='green'>Loading (received) Content</span>"
+            return response.json();
+        })
+        .then(data => {
+            // console.log("data from server:", data)
+         
+      
+                res = data.response;
+                if (res=='<span id="red">You did not login!</span>'){
+                  logout()
+           
+
+            }
+
+
+            console.log(res)
+
+            holder.classList.add("flex")
+            out.innerHTML = res
+      
+            
+            cencon.innerHTML=ocikon
+            scrollDown100px() 
+          
+        })
+        .catch(error => {
+            console.log("something wrong with the response", error)
+            if (String(error) == "SyntaxError: Unexpected end of JSON input") {
+                error = "Content being updated in the server, please try again later!"
+            }
+            
+          
+       
+         
+             cencon.innerHTML=ocikon
+            holder.classList.add("flex");
+            
+            
+        });
+
+
+}
+
+}
+ 

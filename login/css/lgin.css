@@ -13,10 +13,50 @@
     height: 100vh;
     width: 100vw;
     margin: 0;
-    background: #000;
+    /* background-image: url('../../sources/ball.png'); */
+    background-color: rgba(0,0,0,1);
+    background-repeat: no-repeat;
+    background-size:cover;
+    background-blend-mode: darken;
     padding-top: 20px;
     padding-bottom: 20px;
   }
+
+
+   .back-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: #111;
+      border: 2px solid #00aaff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .back-button:hover {
+      transform: scale(1.15) rotate(-10deg);
+      box-shadow: 0 0 15px 2px #00aaff;
+    }
+
+    .back-button svg {
+      fill: #00aaff;
+      width: 24px;
+      height: 24px;
+      transition: transform 0.3s ease;
+    }
+
+    .back-button:hover svg {
+      transform: translateX(-4px);
+    }
+
+
   
   .login-container {
     box-shadow: 0 5px 5px rgba(48, 150, 233, 0.7), 0 10px 10px rgba(44, 61, 115, 0.7), 0 10px 10px rgba(0, 0, 0, 1);

@@ -1,5 +1,6 @@
 let date2=18
 let date1=17
+let state__p=''
 
 // theme="Dark"
 // Function to change the stylesheet link
@@ -18,12 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  let theme=accessInfo('theme_+-----')
-  if (theme){
-    if (theme=='Light'){
-      changeStylesheet('css/Lreg.css')
-    }
-  }})
+  
+  })
 
 
 function en(text, key) {

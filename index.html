@@ -1,669 +1,481 @@
 <!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="Author" content="Katlego Mathe">
-  <meta name="Description" content="Login Interface">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <link rel="stylesheet" href="css/index.css">
-  <title>TechNify</title>
-  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-  <script src="js/allhandler.js"></script>
-  <script src="js/mod.js"></script>
-  <!-- the style tag and all other empty tags are used dynamically in javaScrcipt, Do not remove them!,  -->
-  <style>
-    body {
-      height: 100vh;
-      width: 100vw;
-      background-color: black;
-      overflow: hidden;
-    }
-
-    .loading {
-      height: 100vh;
-      overflow: hidden;
-
-    }
-
-    .loader {
-      height: 100vh;
-      width: 100vw;
-      position: absolute;
-      z-index: 10000000000000000000;
-      background-color: black;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-
-
-
-    }
-
-    .headl {
-      font-size: 2rem;
-      color: aqua;
-    }
-
-    .hide {
-      visibility: hidden;
-      min-height: 0px;
-      min-width: 0px;
-      max-width: 0px;
-      max-height: 0px;
-      opacity: 0;
-      overflow: hidden;
-    }
-
-    .bload {
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      overflow: hidden;
-      height: 100vh
-    }
-
-
-    @keyframes spin {
-      from {
-        transform: rotate(0);
-      }
-
-      to {
-        transform: rotate(359deg);
-      }
-    }
-
-    @keyframes spin3D {
-      from {
-        transform: rotate3d(.5, .5, .5, 360deg);
-      }
-
-      to {
-        transform: rotate3d(0deg);
-      }
-    }
-
-    @keyframes configure-clockwise {
-      0% {
-        transform: rotate(0);
-      }
-
-      25% {
-        transform: rotate(90deg);
-      }
-
-      50% {
-        transform: rotate(180deg);
-      }
-
-      75% {
-        transform: rotate(270deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    @keyframes configure-xclockwise {
-      0% {
-        transform: rotate(45deg);
-      }
-
-      25% {
-        transform: rotate(-45deg);
-      }
-
-      50% {
-        transform: rotate(-135deg);
-      }
-
-      75% {
-        transform: rotate(-225deg);
-      }
-
-      100% {
-        transform: rotate(-315deg);
-      }
-    }
-
-    @keyframes pulse {
-      from {
-        opacity: 1;
-        transform: scale(1);
-      }
-
-      to {
-        opacity: .25;
-        transform: scale(.75);
-      }
-    }
-
-    /* GRID STYLING */
-
-    * {
-      box-sizing: border-box;
-    }
-
-
-
-    .spinner-box {
-      width: 300px;
-      height: 300px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: transparent;
-    }
-
-    /* SPINNING CIRCLE */
-
-
-
-
-    /* ALTERNATING ORBITS */
-
-    .circle-border {
-      width: 150px;
-      height: 150px;
-      padding: 3px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 50%;
-      background: rgb(63, 249, 220);
-      background: linear-gradient(0deg, rgba(63, 249, 220, 0.1) 33%, rgba(63, 249, 220, 1) 100%);
-      animation: spin .8s linear 0s infinite;
-    }
-
-    .circle-core {
-      width: 100%;
-      height: 100%;
-      background-color: #1d2630;
-      border-radius: 50%;
-    }
-
-    /* X-ROTATING BOXES */
-
-    .configure-border-1 {
-      width: 115px;
-      height: 115px;
-      padding: 3px;
-      position: absolute;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #fb5b53;
-      animation: configure-clockwise 3s ease-in-out 0s infinite alternate;
-    }
-
-    .configure-border-2 {
-      width: 115px;
-      height: 115px;
-      padding: 3px;
-      left: -115px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: rgb(63, 249, 220);
-      transform: rotate(45deg);
-      animation: configure-xclockwise 3s ease-in-out 0s infinite alternate;
-    }
-
-    .configure-core {
-      width: 100%;
-      height: 100%;
-      background-color: #1d2630;
-    }
-
-    /* PULSE BUBBLES */
-
-    .pulse-container {
-      width: 120px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .pulse-bubble {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background-color: #3ff9dc;
-    }
-
-    .pulse-bubble-1 {
-      animation: pulse .4s ease 0s infinite alternate;
-    }
-
-    .pulse-bubble-2 {
-      animation: pulse .4s ease .2s infinite alternate;
-    }
-
-    .pulse-bubble-3 {
-      animation: pulse .4s ease .4s infinite alternate;
-    }
-
-    /* SOLAR SYSTEM */
-
-    .solar-system {
-      width: 250px;
-      height: 250px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .orbit {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border: 1px solid #fafbfC;
-      border-radius: 50%;
-    }
-
-    .earth-orbit {
-      width: 165px;
-      height: 165px;
-      -webkit-animation: spin 12s linear 0s infinite;
-      animation: spin 12s linear 0s infinite;
-    }
-
-    .venus-orbit {
-      width: 120px;
-      height: 120px;
-      -webkit-animation: spin 7.4s linear 0s infinite;
-      animation: spin 7.4s linear 0s infinite;
-    }
-
-    .mercury-orbit {
-      width: 90px;
-      height: 90px;
-      -webkit-animation: spin 3s linear 0s infinite;
-      animation: spin 3s linear 0s infinite
-    }
-
-    .planet {
-      position: absolute;
-      top: -5px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: #3ff9dc;
-    }
-
-    .sun {
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      background-color: #ffab91;
-    }
-
-    .leo {
-      position: absolute;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 50%;
-    }
-
-    .blue-orbit {
-      width: 165px;
-      height: 165px;
-      border: 1px solid #91daffa5;
-      animation: spin3D 3s linear .2s infinite;
-      -webkit-animation: spin3D 3s linear .2s infinite;
-    }
-
-    .green-orbit {
-      width: 120px;
-      height: 120px;
-      border: 1px solid #91ffbfa5;
-      animation: spin3D 2s linear 0s infinite;
-      -webkit-animation: spin3D 2s linear 0s infinite;
-    }
-
-    .red-orbit {
-      width: 90px;
-      height: 90px;
-      border: 1px solid #ffca91a5;
-      animation: spin3D 1s linear 0s infinite;
-      -webkit-animation: spin3D 1s linear 0s infinite;
-    }
-
-    .white-orbit {
-      width: 60px;
-      height: 60px;
-      border: 2px solid #ffffff;
-      animation: spin 12s linear 0s infinite;
-      -webkit-animation: spin3D 10s linear 0s infinite;
-    }
-
-    .w1 {
-      transform: rotate3D(1, 1, 1, 90deg);
-    }
-
-    .w2 {
-      transform: rotate3D(1, 2, .5, 90deg);
-    }
-
-    .w3 {
-      transform: rotate3D(.5, 1, 2, 90deg);
-    }
-
-    .three-quarter-spinner {
-      width: 50px;
-      height: 50px;
-      border: 3px solid #fb5b53;
-      border-top: 3px solid transparent;
-      border-radius: 50%;
-      animation: spin .5s linear 0s infinite;
-    }
-  </style>
-  <script>
-
-  </script>
+<html lang="en" >
+   
+<head> 
+   
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPREDICTIONS | Main</title>
+    <script src="js/mod.js"></script>
+    <script src="js/allhandler.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+     <script src="js/taiwan.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 </head>
+<body style="max-width:100vw;height:100vh;">
+     <div id='mainloader' class="loading-container11">
+        <div class="title11">
+            <span class="letter11"></span>
+          <span class=""><img style="height:50px;width:50px; border-radius: 50%;display: inline;" src="favicon.ico"></span>
 
-<body>
+        
+   
+      
+        </div>
+        <div class="loader11"></div>
+        <div id="username_loader11" class="subtitle11"></div>
+        <div id="state_loader11" class="subtitle11"></div>
 
-  <div class="loader" id="loader">
-    <div class="headl">TechNify</div>
+        <div class="checkbox-container11">
+          <!-- <div id="vdata" class="check-box  hide_bx11">Validation</div> -->
+          <!-- <div id="fdata__" class="check-box  hide_bx11">Fetching Data</div> -->
+          <!-- <div id="ldata" class="check-box  hide_bx11">Loading Data</div> -->
+        </div>
+        <div class="particles11">
+          <div class="particle11" style="left: 10%; animation-delay: 0s;"></div>
+          <div class="particle11" style="left: 25%; animation-delay: 0.8s;"></div>
+          <div class="particle11" style="left: 40%; animation-delay: 1.6s;"></div>
+          <div class="particle11" style="left: 60%; animation-delay: 2.4s;"></div>
+          <div class="particle11" style="left: 80%; animation-delay: 3.2s;"></div>
+          <div class="particle11" style="left: 95%; animation-delay: 4s;"></div>
+        </div>
 
-    <div class="spinner-box">
-      <div class="blue-orbit leo">
-      </div>
-
-      <div class="green-orbit leo">
-      </div>
-
-      <div class="red-orbit leo">
-      </div>
-
-      <div class="white-orbit w1 leo">
-      </div>
-      <div class="white-orbit w2 leo">
-      </div>
-      <div class="white-orbit w3 leo">
-      </div>
     </div>
-  </div>
-
-
-
-  <!-- <script src="loader.js"></script> -->
-
-
-
-
-
-
-  <!-- <script src="loader.js"></script> -->
-
-
-
-  <header>
-
-    <header id="h1" class="h1">
-      <div class="status">
-        <p>
-          <span class="status-head">Free Shipping</span>
-          <span id="status-info"> This Week Order Over - R300</span>
-        </p>
-      </div>
-      <div class="cultural-identity">
-        <div class="currency">
-          <select clas="lang" id="dropdown-menu " name="options" class="opl">
-            <option value="ZAR">
-              ZAR R
-            </option>
-            <option class="op11" value="option2">USD $</option>
-            <option value="option3" class="op11">EUR £</option>
-          </select>
+      
+    <!-- Header -->
+   <header class="flex ">
+      <div class="logo flex items-center gap-3 animate-fade-in-down">
+        <div class="logo_img ">
+          <img id="iconm" style="border-radius: 50%;width:50px;height:50px" src="favicon.ico" alt="">
         </div>
-        <div class="language">
-          <select clas="lang" class="opl" id="dropdown-menu " name="options">
-            <option value="en-US">
-              ENGLISH
-            </option>
-            <option value="option2" class="op11">AFRIKAANS</option>
-            <option value="option3" class="op11">FRANÇAIS</option>
-          </select>
+        <div class="logo_name" id='usname'style="text-transform: uppercase;">TPREDICTIONS</div>
+      </div>
+      <nav>
+        <ul class="">
+          <li><a href="#"class="active_ anc"   id="Dashboard" >Main</a></li>
+      
+          <li><a href="Logged/posts/index.html" class="anc"  id="BTS" >Trends</a></li>
+          <li style="margin-right: 20px;"><a id="ll1" class="anc" style="color:white" onclick="register()" href="#">SignUp</a></li>
+        </ul>
+        <button id="menu-btn" class="fixed top-7 right-4 z-50 flex flex-col gap-1">
+          <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar1"></div>
+          <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar2"></div>
+          <div class="w-6 h-0.5 bg-black transition-all duration-300" id="bar3"></div>
+        </button>
+
+        <!-- Overlay -->
+        <div id="overlay"
+          class="fixed inset-0 bg-white/60 backdrop-blur-md z-40 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out">
         </div>
-      </div>
-    </header>
-    <section id="h2" class="h2">
-      <div class="com-name">
-        TechNify
-      </div>
-      <div class="search-bar">
-        <div class="searchBox">
 
-          <input maxlength="27" writingsuggestions="true" class="searchInput" type="text" name=""
-            placeholder="Search Product">
-          <button class="searchButton" href="#">
-            <i class="material-icons">search</i>
-          </button>
+        <div id="side-menu"
+          class="fixed top-0 right-0 w-80 h-full bg-white bg-opacity-80 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-l border-white/50 z-50 transform translate-x-full transition-transform duration-500 ease-in-out flex flex-col p-6 gap-6">
+          <div class="flex justify-between items-center">
+
+            <h2 id="hmen" class="text-2xl font-extrabold text-gray-900 whitec"><img
+                style="height:50px;width:50px; border-radius: 50%;display: inline;" src="favicon.ico">
+              </h2>
+            <button id="close-btn" class="text-2xl font-bold text-gray-500 hover:text-gray-900 whitec">×</button>
+          </div>
+          <a href="#" id='ot3'
+            class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
+            🏠 <span >Main</span>
+          </a>
+         
+          <a href="Logged/posts/index.html"
+            class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
+            📈 <span>Trends</span>
+          </a>
+          
+          <a href="#" id="ll2" onclick="register()"
+            class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
+            🚪 <span id='ot4'>SignUp</span>
+          </a>
         </div>
-      </div>
-      </div>
-    </section>
-  </header>
-  <div class="tpcolor">
+        <script>
+          if (true){
+              const stylesheet =document.getElementById("menu-btn");
+                  stylesheet.innerHTML=` <div class="w-6 h-0.5 bg-white transition-all duration-300" id="bar1"></div>
+              <div class="w-6 h-0.5 bg-white transition-all duration-300" id="bar2"></div>
+              <div class="w-6 h-0.5 bg-white transition-all duration-300" id="bar3"></div>`
 
-  </div>
+              document.getElementById('overlay').setAttribute('class','fixed inset-0 bg-black/60 backdrop-blur-md z-40 opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out')
+              document.getElementById('hmen').setAttribute('class','text-2xl font-extrabold text-white-900')
+              
+              document.getElementById('side-menu').setAttribute('class','fixed top-0 right-0 w-80 h-full bg-black bg-opacity-70 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.1)] border-l border-white/50 z-50 transform translate-x-full transition-transform duration-500 ease-in-out flex flex-col p-6 gap-6')
 
-  <section class="s1_1">
-    <div class="space"></div>
-    <nav>
-      <ul>
-        <a href="#" id="main" class="main_navs">
-          <li class='main'>Home</li>
-        </a>
-        <a href="services/Lt/" class="main_navs">
-          <li id="none">BTS</li>
-        </a>
-        <a href="#" class="main_navs">
-          <li id="none">Hot specials</li>
-        </a>
-
-        <a href="#" class="main_navs">
-          <li id="none">Blog</li>
-        </a>
-
-        <a href="#" class="main_navs">
-          <li id="none">Contact</li>
-        </a>
+               document.querySelectorAll('.whitec').forEach(element =>{
+                element.setAttribute('class','flex items-center gap-2 text-lg text-white-700 hover:text-indigo-600 transition-all duration-200 whitec')
+              })
 
 
-
-      </ul>
-    </nav>
-  </section>
-  <!-- <div id="notification" class="notification">
-        <p>Try our sports predicter <a href="services/Lt/">BTS</a></p>
-      </div> -->
-
-  <section class="s2">
-
-    <div class="overlay joj"></div>
-
-    <div class="tr-item">
-
-      <div class="images">
-
-
-
-      </div>
-
-
-
-      <div class="m1" data="Tech inovation"></div>
-      <div class="tent"></div>
-      <nav class="navigation-h-imgs">
-        <div class="space"></div>
-        <div class="navs">
-          <div class="button prev"></div>
-          <div class="button next">Play</div>
-        </div>
+          }
+        </script>
       </nav>
 
+
+    </header>
+
+  
+    
+
+    <div class="smoother">
+      <div class="line"></div>
     </div>
-    <!-- <video class="item1 vid" autoplay=True loop  muted >
-        <source src="sources/SONOFF_NSPanel_Pro_V3.0.0_is_now_live!(1440p).webm">
-    </video> -->
+    
 
-
-  </section>
-
-  <section class="s3">
-    <div class="move-right"> <img class="left-nav" src="sources/output.gif" alt=""></div>
-    <div class="line_"></div>
-
-    <div class="containers" id="scrollable">
-    </div>
-
-  </section>
-
-
-
-
-  <section class="s5">
-    <div class="container5">
-      <div class="slider">
-        <div class="slides">
-          <input type="radio" name="radio-btn" id="radio1">
-          <input type="radio" name="radio-btn" id="radio2">
-          <input type="radio" name="radio-btn" id="radio3">
-          <input type="radio" name="radio-btn" id="radio4">
-
-          <div class="slide first">
-            <img src="sources/NSPanel-PRO.jpg" alt="Image 1">
-          </div>
-          <div class="slide">
-            <img src="sources/s1.jpg" alt="Image 2">
-          </div>
-          <div class="slide">
-            <img src="sources/s3.jpg" alt="Image 3">
-          </div>
-          <div class="slide">
-            <img src="sources/s5.jpeg" alt="Image 4">
-          </div>
-
-          <div class="navigation-auto">
-            <div class="auto-btn1"></div>
-            <div class="auto-btn2"></div>
-            <div class="auto-btn3"></div>
-            <div class="auto-btn4"></div>
-          </div>
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <video class="hero-bg-video" autoplay muted loop playsinline poster="sources/ball.png">
+          <!-- <source src="sources/2.mp4" type="video/mp4"> -->
+          <!-- Fallback image if video not supported -->
+        </video>
+        <div class="hero-overlay"></div>
+        <div class="hero-content animate__animated animate__fadeInDown" data-aos="fade-up">
+          <h1 class="hero-title animate__animated animate__fadeInDown" data-aos="fade-up">Revolutionize Your Betting with <span>TechNified Predictions</span></h1>
+          <p class="hero-desc animate__animated animate__fadeInUp" data-aos="fade-up" data-aos-delay="200">Harness advanced algorithms, real-time data, and encryption for the most accurate, secure, and profitable betting experience ever.</p>
+          <a href="#cta" class="cta-btn animate__animated animate__pulse animate__infinite" data-aos="zoom-in" data-aos-delay="400">Get Started Now</a>
         </div>
+      </section>
 
-        <div class="navigation-manual">
-          <label for="radio1" class="manual-btn"></label>
-          <label for="radio2" class="manual-btn"></label>
-          <label for="radio3" class="manual-btn"></label>
-          <label for="radio4" class="manual-btn"></label>
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>System Benefits</h2>
+                <p>Discover how our advanced prediction system transforms football analytics</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Real-time Data Processing</h3>
+                    <p>Continuously updates with the latest match data to provide timely insights.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>Machine Learning Predictions</h3>
+                    <p>Utilizes a KNN-based model trained on historical data to forecast match outcomes.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Comprehensive Data Analysis</h3>
+                    <p>Analyzes team performance, player stats, and historical trends from multiple sources.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Data Privacy Focus</h3>
+                    <p>Ensures user data is handled securely and in compliance with privacy regulations.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3>Global Coverage</h3>
+                    <p>Covers matches from various leagues and countries worldwide.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3>Adaptive Algorithms</h3>
+                    <p>Continuously improves prediction accuracy by learning from new match data.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2>How The System Works</h2>
+                <p>Our prediction engine follows a sophisticated multi-step process</p>
+            </div>
+            
+            <div class="process">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Data Collection</h3>
+                        <p>The system scrapes match data from various sources, including live matches and historical records.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Data Processing</h3>
+                        <p>Collected data is cleaned, normalized, and stored for further analysis.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Team Analysis</h3>
+                        <p>Using historical performance data, the system calculates each team's capabilities for winning, drawing, and losing.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Prediction Generation</h3>
+                        <p>A machine learning model predicts match outcomes based on the analyzed team capabilities.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h3>Result Presentation</h3>
+                        <p>Predictions are compiled and presented through a user-friendly interface for easy access.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Limitations -->
+    <section class="limitations" id="limitations">
+        <div class="container">
+            <div class="section-header">
+                <h2>System Limitations</h2>
+                <p>While advanced, our prediction system has inherent constraints</p>
+            </div>
+            
+            <div class="limitations-grid">
+                <div class="limitation-card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Unpredictable Events</h3>
+                    <p>The system cannot account for sudden changes like player injuries or unexpected tactical shifts.</p>
+                </div>
+                
+                <div class="limitation-card">
+                    <h3><i class="fas fa-database"></i> Data Quality Dependencies</h3>
+                    <p>Predictions are only as good as the data they're based on. Incomplete or outdated data can lead to less accurate predictions.</p>
+                </div>
+                
+                <div class="limitation-card">
+                    <h3><i class="fas fa-user-friends"></i> Human Element</h3>
+                    <p>Factors like team chemistry, player motivation, or coaching strategies are difficult to quantify and may not be fully captured.</p>
+                </div>
+                
+                <div class="limitation-card">
+                    <h3><i class="fas fa-cloud-sun"></i> Environmental Factors</h3>
+                    <p>While some external factors are considered, sudden changes in weather or pitch conditions can still impact the outcome.</p>
+                </div>
+                
+                <div class="limitation-card">
+                    <h3><i class="fas fa-lock"></i> Data Privacy Constraints</h3>
+                    <p>To comply with regulations, certain data might not be collected or used, potentially limiting the model's accuracy.</p>
+                </div>
+                
+                <div class="limitation-card">
+                    <h3><i class="fas fa-chart-bar"></i> Statistical Probabilities</h3>
+                    <p>Even with advanced algorithms, football matches can be unpredictable, and there's always a margin of error in predictions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- CTA Section -->
+    <section class="cta" id="cta">
+        <div id="cta_main" class="container">
+            <div id='ctac' class="cta-content ">
+                <h2>Ready to Transform Your Football Predictions?</h2>
+                <p>Join thousands of analysts, bettors, and football enthusiasts who use our system to gain a competitive edge.</p>
+                <div class="hero-buttons">
+                    <a href="#" id='tbtn'class="btn btn-primary">Start Free Trial</a>
+                    <a href="#" id="dbtn" class="btn btn-outline">Request Demo</a>
+                </div>
+            </div>
+
+             
+                  <div id="demoss" class="container33 hide ">
+
+        <div class="holder">
+          <div id="cencon" class="container-bts">
+            <div class="form">
+              <div class="cap"><img
+                style="height:50px;width:50px; border-radius: 50%;display: inline;" src="favicon.ico"> TPREDICTIONS<span id="M"></span><span id="T"></span><span id="E"></span></div>
+              <label id='label33' for="input">Match: <input id="input" placeholder="liverpool vs chealsea" type="text" minlength="4"/></label>
+              <button class="btn btn33" onclick="predict()" >submit</button>
+             
+             
+            </div>
+          </div>
+          
+          <div>
+            <div class="output"></div>
+            <div class="progress-container hide">
+        <div class="progress-bar" id="progress-bar">50%</div>
+    </div>
+    <div class="progress-label hide">Progress: <span id="progress-text">50%</span></div>
+    
+          </div>
         </div>
       </div>
-
-      <script src="js/slider.js"></script>
-      <div class="info_nsp">
-        <ul>
-          <li class="inf_txt_nsp"><span class='nsp_h'>Centralized Control: </span>It lets you control various smart home
-            devices like lights, switches, and appliances from one convenient panel.</li>
-          <li class="inf_txt_nsp"><span class='nsp_h'>Remote Access: </span>Can be controlled remotely using the eWeLink
-            app.</li>
-          <li class="inf_txt_nsp"><span class='nsp_h'>Temperature Monitoring: </span>Built-in temperature sensor to
-            monitor and adjust room temperature.</li>
-          <li class="inf_txt_nsp"><span class='nsp_h'>Voice Control: </span>Supports voice commands via Amazon Alexa,
-            Google Assistant, and Siri.</li>
-        </ul>
-      </div>
-
-    </div>
-  </section>
-
-  <div class="inf3_small">
-    <ul>
-      <li class="inf_txt_nsp"><span class='nsp_h'>Centralized Control: </span>It enables you control various smart home
-        devices like lights, switches, and appliances from one convenient panel.</li>
-      <li class="inf_txt_nsp"><span class='nsp_h'>Remote Access: </span>Can be controlled remotely using the eWeLink
-        app.</li>
-      <li class="inf_txt_nsp"><span class='nsp_h'>Temperature Monitoring: </span>Built-in temperature sensor to monitor
-        and adjust room temperature.</li>
-      <li class="inf_txt_nsp"><span class='nsp_h'>Voice Control: </span>Supports voice commands via Amazon Alexa, Google
-        Assistant, and Siri.</li>
-    </ul>
-  </div>
-  <section class="s4">
-    <div class="s4_con">
-      <div class="category_con">
-        <div class="cathead">Categories</div>
-      </div>
-      <div class="more_con">
-        <div class="field" id="ARV">
-          <div class="arhead">New Arrivals</div>
-          <div class="containers_s4" id="NA">
-            <div class="container_s4"></div>
-            <div class="container_s4"></div>
-
-          </div>
+       
         </div>
-        <div class="field" id="Trending">
-          <div class="arhead">Trending</div>
-          <div class="containers_s4" id="TR">
-            <div class="container_s4"></div>
-            <div class="container_s4"></div>
+    </section>
 
-          </div>
+    <script>
+        let demo = document.getElementById('demoss')
+        let ctac = document.getElementById('ctac')
+        let dbtn = document.getElementById('dbtn')
+        dbtn.addEventListener('click',()=>{
+            demo.classList.remove('hide')
+            demo.classList.add('cta-content')
+            ctac.classList.add('hide')
+
+        })
+       
+
+    </script>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h3>TPREDICTIONS</h3>
+                    <p>The most advanced football prediction system, combining statistical analysis, and real-time data processing.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-col">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="#features"><i class="fas fa-chevron-right"></i> Features</a></li>
+                        <li><a href="#how-it-works"><i class="fas fa-chevron-right"></i> How It Works</a></li>
+                        <li><a href="#limitations"><i class="fas fa-chevron-right"></i> Limitations</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Pricing</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h3>Resources</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Documentation</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> API Reference</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Case Studies</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Research Papers</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h3>Contact Us</h3>
+                    <ul class="footer-links">
+                        <li><a href="mailto:TechNify.u.me@gmail.com"><i class="fas fa-envelope"></i> TechNify.u.me@gmail.com</a></li>
+                        <li><a href="tel:+27825516756"><i class="fas fa-phone"></i>+27 82 551 6756</a></li>
+                        <li><a href="#" ><i class="fas fa-map-marker-alt"></i> 📍RSA Gauteng,Pretoria  </a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                <p>&copy; 2025 TPREDICTIONS All rights reserved. |  <span class="message m2"><a href='Terms _and_Conditions/index.html'>Terms and Conditions</a></span></p>
+            </div>
         </div>
+    </footer>
+    <script src="js/index.js">
+        
+    </script>
 
-        <div class="field" id="TP">
-          <div class="arhead">Top Rated</div>
-          <div class="containers_s4" id="TPR">
-            <div class="container_s4"></div>
-            <div class="container_s4"></div>
+    <script>
+        // Mobile Navigation Toggle
+       
+      
+        
+        // Header scroll effect
+        
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    window.scrollTo({
+                        top: target.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Animation on scroll
+        const animateOnScroll = () => {
+            const elements = document.querySelectorAll('.feature-card, .process-step, .limitation-card');
+            
+            elements.forEach(element => {
+                const elementPosition = element.getBoundingClientRect().top;
+                const screenPosition = window.innerHeight / 1.3;
+                
+                if (elementPosition < screenPosition) {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }
+            });
+        };
+        
+        // Set initial state for animated elements
+        document.querySelectorAll('.feature-card, .process-step, .limitation-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        });
+        
+        // Trigger animations on scroll
+        window.addEventListener('scroll', animateOnScroll);
+        // Initial check in case elements are already in view
+        window.addEventListener('load', animateOnScroll);
+    </script>
 
-          </div>
-        </div>
-      </div>
+ <script>
+        function getHomePath(){
+  basePath= window.location.pathname.split('/')
 
-    </div>
-  </section>
-  <script>
-    window.addEventListener('load', () => {
-      document.querySelector('#loader').style.display = 'none'
-      let head_st = ` <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&amp;display=swap"
-        rel="stylesheet">`
-      let hd_cont = document.querySelector('head')
-      hd_cont.innerHTML = hd_cont.innerHTML + head_st
+       let npath=''
+       if (line=='https://sculpin-charming-directly.ngrok-free.app'){
 
-    })
-  </script>
-  <script src="js/theme.js"></script>
-  <script src="js/index.js"></script>
-  <script src="js/cthead.js"></script>
-
+        npath=bpath
+       }else{
+             for ( i in basePath){
+          npath=npath + '/' + basePath[i]
+          // console.log(npath)
+          if (basePath[i]=='WEBAPP'){
+            break
+          }
+      }
+       }
+       
+    return npath
+}
+        let homepath= getHomePath()
+        localStorage.setItem('Freeprev_path',`${homepath}/index.html`)
+        localStorage.setItem('typeOfPath','Return to Home')
+    </script>
 </body>
-<div id="msg">
-  <div class="s">Device Screen Size Not Supported</div>
-</div>
-
 </html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sports Team Performance Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #000;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      background: #0056b3;
+      border-radius: 10px;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      background: #333;
+      transition: background 0.3s;
+    }
+    nav a:hover {
+      background: #555;
+    }
+    section {
+      margin: 40px 0;
+    }
+    h1, h2 {
+      color: #0056b3;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .team-card {
+      background: #111;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      opacity: 0;
+      animation: fadeIn 0.5s ease-in-out forwards;
+      transition: transform 0.3s;
+    }
+    .team-card:hover {
+      transform: scale(1.03);
+    }
+    .team-card img {
+      width: 50px;
+      height: auto;
+      margin-bottom: 10px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #streakChart {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #111;
+      padding: 20px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Team Performance Dashboard</h1>
+  </header>
+  <nav id="streak-nav"></nav>
+  <section id="stats">
+    <h2>Overall Statistics</h2>
+    <canvas id="streakChart"></canvas>
+  </section>
+  <main id="content"></main>
+
+  <script>
+    // Parse content to extract team details
+    function parseContent(content) {
+      const parts = content.split(' has ');
+      const teamName = parts[0].trim();
+      const rest = parts[1];
+      const numberMatch = rest.match(/\d+/);
+      const number = numberMatch ? parseInt(numberMatch[0]) : null;
+      const isHome = rest.includes('home');
+      const isAway = rest.includes('away');
+      let streakType = '';
+      if (rest.includes('won all their last') && !isHome && !isAway) {
+        streakType = 'Winning Streak';
+      Binder
+      } else if (rest.includes('not lost any of their') && isHome) {
+        streakType = 'Unbeaten Home Streak';
+      } else if (rest.includes('not won any of their last') && isAway) {
+        streakType = 'Not Winning Away Streak';
+      } else if (rest.includes('lost all their last') && !isHome && !isAway) {
+        streakType = 'Losing Streak';
+      } else {
+        streakType = 'Other';
+      }
+      const leagueMatch = rest.match(/played in ([\w\s]+)\s\./);
+      const league = leagueMatch ? leagueMatch[1].trim() : '';
+      return { teamName, number, streakType, league };
+    }
+
+    // Placeholder for JSON data
+    const data =  [{"content": "Werder Bremen II has won all their last 32 matches played in Oberliga .", "img_src": "pImgs/Germany.png"}, {"content": "The New Saints has won all their last 26 matches played in Premier League .", "img_src": "pImgs/Wales.png"}, {"content": "Deportivo Saprissa has not lost any of their 24 home matches played in Primera División .", "img_src": "pImgs/Costa Rica.png"}, {"content": "Rotherham United has not won any of their last 23 away matches played in Championship .", "img_src": "pImgs/England.png"}, {"content": "Olimpia has not lost any of their 23 home matches played in Liga Nacional .", "img_src": "pImgs/Honduras.png"}, {"content": "Ipswich Town has not lost any of their 21 home matches played in Championship .", "img_src": "pImgs/England.png"}, {"content": "Unión Sur Yaiza has not lost any of their 20 home matches played in Tercera Division .", "img_src": "pImgs/Spain.png"}, {"content": "CD Coria has not lost any of their 20 home matches played in Tercera Division .", "img_src": "pImgs/Spain.png"}, {"content": "Cuarte has not lost any of their 20 home matches played in Tercera Division .", "img_src": "pImgs/Spain.png"}, {"content": "Granada has not won any of their last 20 away matches played in La Liga .", "img_src": "pImgs/Spain.png"}, {"content": "Defensores Unidos has not won any of their last 19 away matches played in Prim B Nacional .", "img_src": "pImgs/Argentina.png"}, {"content": "Güemes has not won any of their last 19 away matches played in Prim B Nacional .", "img_src": "pImgs/Argentina.png"}, {"content": "Vélez Sarsfield has not lost any of their 19 home matches played in Primera División .", "img_src": "pImgs/Argentina.png"}, {"content": "América Mineiro has not lost any of their 19 home matches played in Serie B .", "img_src": "pImgs/Brazil.png"}, {"content": "Brusque has not won any of their last 19 away matches played in Serie B .", "img_src": "pImgs/Brazil.png"}, {"content": "Fortaleza has not lost any of their 19 home matches played in Serie A .", "img_src": "pImgs/Brazil.png"}, {"content": "Unión Magdalena has not lost any of their 19 home matches played in Primera B .", "img_src": "pImgs/Colombia.png"}, {"content": "České Budějovice has not won any of their last 19 away matches played in Czech Liga .", "img_src": "pImgs/Czech Republic.png"}, {"content": "Manchester City has not lost any of their 19 home matches played in Premier League .", "img_src": "pImgs/England.png"}, {"content": "Kashima Antlers has not lost any of their 19 home matches played in J1 League .", "img_src": "pImgs/Japan.png"}, {"content": "Kagoshima United has not won any of their last 19 away matches played in J2 League .", "img_src": "pImgs/Japan.png"}, {"content": "Katsina United has not lost any of their 19 home matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Katsina United has not won any of their last 19 away matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Heartland has not won any of their last 19 away matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Sporting Lagos has not won any of their last 19 away matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Gombe United has not won any of their last 19 away matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Bendel Insurance has not won any of their last 19 away matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Rivers United has not lost any of their 19 home matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Rivers United has not won any of their last 19 away matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Remo Stars has not lost any of their 19 home matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Newry City has not won any of their last 19 home matches played in Premiership .", "img_src": "pImgs/Northern Ireland.png"}, {"content": "Red Star Belgrade has not lost any of their 19 home matches played in Super Liga .", "img_src": "pImgs/Serbia.png"}, {"content": "Athletic Club has not lost any of their 19 home matches played in La Liga .", "img_src": "pImgs/Spain.png"}, {"content": "Real Madrid has not lost any of their 19 home matches played in La Liga .", "img_src": "pImgs/Spain.png"}, {"content": "Uşak Spor has lost all their last 19 matches played in 2. Lig .", "img_src": "pImgs/Turkey.png"}, {"content": "Fenerbahce has not lost any of their 19 away matches played in Süper Lig .", "img_src": "pImgs/Turkey.png"}, {"content": "Sarmiento de La Banda has not lost any of their 18 home matches played in Federal A Tournament .", "img_src": "pImgs/Argentina.png"}, {"content": "Pyunik has not lost any of their 18 home matches played in Premier League .", "img_src": "pImgs/Armenia.png"}, {"content": "Cherno more has not lost any of their 18 home matches played in First League .", "img_src": "pImgs/Bulgaria.png"}, {"content": "Rudeš has not won any of their last 18 away matches played in 1. HNL .", "img_src": "pImgs/Croatia.png"}, {"content": "AE Zakakiou has not won any of their last 18 away matches played in 1. Division .", "img_src": "pImgs/Cyprus.png"}, {"content": "Sparta Prague has not lost any of their 18 home matches played in Czech Liga .", "img_src": "pImgs/Czech Republic.png"}, {"content": "Laagri has not lost any of their 18 home matches played in Esiliiga A .", "img_src": "pImgs/Estonia.png"}, {"content": "Nõmme United has not won any of their last 18 away matches played in Meistriliiga .", "img_src": "pImgs/Estonia.png"}, {"content": "FCI Levadia has not lost any of their 18 home matches played in Meistriliiga .", "img_src": "pImgs/Estonia.png"}, {"content": "Würzburger Kickers has not lost any of their 18 home matches played in Regionalliga .", "img_src": "pImgs/Germany.png"}, {"content": "Hannover 96 II has not lost any of their 18 home matches played in Regionalliga .", "img_src": "pImgs/Germany.png"}, {"content": "1. SC Feucht has not won any of their last 18 home matches played in Oberliga .", "img_src": "pImgs/Germany.png"}, {"content": "AEK Athens has not lost any of their 18 home matches played in Super League .", "img_src": "pImgs/Greece.png"}, {"content": "Cork City has not lost any of their 18 home matches played in First Division .", "img_src": "pImgs/Ireland.png"}, {"content": "Kerry has not won any of their last 18 away matches played in First Division .", "img_src": "pImgs/Ireland.png"}, {"content": "Enugu Rangers has not lost any of their 18 home matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Sunshine Stars has not lost any of their 18 home matches played in NPFL .", "img_src": "pImgs/Nigeria.png"}, {"content": "Stranraer has not won any of their last 18 away matches played in League Two .", "img_src": "pImgs/Scotland.png"}, {"content": "Falkirk has not lost any of their 18 home matches played in League One .", "img_src": "pImgs/Scotland.png"}, {"content": "Falkirk has not lost any of their 18 away matches played in League One .", "img_src": "pImgs/Scotland.png"}, {"content": "Edinburgh City has not won any of their last 18 away matches played in League One .", "img_src": "pImgs/Scotland.png"}, {"content": "Thun has not lost any of their 18 home matches played in Challenge League .", "img_src": "pImgs/Switzerland.png"}, {"content": "Sincan Bld Ankaraspor has not lost any of their 18 home matches played in 2. Lig .", "img_src": "pImgs/Turkey.png"}, {"content": "Uşak Spor has not won any of their last 18 home matches played in 2. Lig .", "img_src": "pImgs/Turkey.png"}, {"content": "Carabobo has not lost any of their 18 home matches played in Primera División .", "img_src": "pImgs/Venezuela.png"}];
+;
+
+    // Enhance data with parsed fields
+    data.forEach(item => {
+      const parsed = parseContent(item.content);
+      item.teamName = parsed.teamName;
+      item.number = parsed.number;
+      item.streakType = parsed.streakType;
+      item.league = parsed.league;
+      item.country = item.img_src.split('/').pop().replace('.png', '');
+    });
+
+    // Group data by streak type
+    const groupedData = {};
+    data.forEach(item => {
+      if (!groupedData[item.streakType]) {
+        groupedData[item.streakType] = [];
+      }
+      groupedData[item.streakType].push(item);
+    });
+
+    // Sort each group by streak length (descending)
+    for (const type in groupedData) {
+      groupedData[type].sort((a, b) => b.number - a.number);
+    }
+
+    // Generate navigation menu
+    const streakTypes = Object.keys(groupedData);
+    const nav = document.getElementById('streak-nav');
+    streakTypes.forEach(type => {
+      const link = document.createElement('a');
+      link.href = `#${type.replace(/\s+/g, '-').toLowerCase()}`;
+      link.textContent = type;
+      nav.appendChild(link);
+    });
+
+    // Generate sections for each streak type
+    const content = document.getElementById('content');
+    for (const type in groupedData) {
+      const section = document.createElement('section');
+      section.id = type.replace(/\s+/g, '-').toLowerCase();
+      const header = document.createElement('h2');
+      header.textContent = type;
+      section.appendChild(header);
+      const longest = groupedData[type][0];
+      const p = document.createElement('p');
+      p.textContent = `Longest: ${longest.teamName} - ${longest.number} matches`;
+      section.appendChild(p);
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+      groupedData[type].forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'team-card';
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.innerHTML = `
+          <img src="${item.img_src}" alt="${item.country}">
+          <h3>${item.teamName} (${item.league})</h3>
+          <p>${item.number} matches</p>
+          <p>${item.content}</p>
+        `;
+        grid.appendChild(card);
+      });
+      section.appendChild(grid);
+      content.appendChild(section);
+    }
+
+    // Create bar chart for streak type distribution
+    const teamCounts = streakTypes.map(type => groupedData[type].length);
+    const ctx = document.getElementById('streakChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: streakTypes,
+        datasets: [{
+          label: 'Number of Teams',
+          data: teamCounts,
+          backgroundColor: '#0056b3',
+          borderColor: '#fff',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Number of Teams',
+              color: '#fff'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Streak Type',
+              color: '#fff'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: '#fff'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

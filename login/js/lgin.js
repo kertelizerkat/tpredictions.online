@@ -49,8 +49,6 @@ function validateForm() {
 }
 
 
-   
-
   function sendFormData(data) {
     // Send data to Flask application using fetch
     console.log(data)
@@ -101,6 +99,7 @@ function validateForm() {
 
               const ps=data['password']
               const p=data['phone']
+           
               const us=data['username']
               const em=data['email']
               storeInfo(en('password',date1),ps)
@@ -119,29 +118,39 @@ function validateForm() {
               // c_btn.textContent = 'Failed'
               // c_btn.style.backgroundColor = 'red'
               // c_btn.setAttribute('type','')
-              
-              ;window.location.assign("../Logged/");
+              window.location.assign("../Logged/index.html");
             }
 
         })
         .catch(error => {
             console.log("Something went wrong with the response", error);
 
-            reg_h.textContent='An error occured'
-            reg_h.style.color='red'
+            reg_h.textContent='We are offline'
+            reg_h.style.color='rgba(255,0,0,0.5)'
 
             const c_btn = document.getElementById('btn_l')
             c_btn.classList.remove('load')
             c_btn.textContent = 'Failed'
             c_btn.style.backgroundColor = 'red'
             // c_btn.setAttribute('type','')
+            // reg_h.textContent='Come back later'
+            // reg_h.style.color='#007bff'
+            // reg_h.style.opacity='0.5'
             
             setTimeout(()=>{
               c_btn.textContent='Try again';
               c_btn.style.backgroundColor='#007bff';
               reg_h.textContent='Login'
-              reg_h.style.color='#0056b3'
+              reg_h.style.opacity='100%'
+              reg_h.style.color='#007bff'
+               
+             
+              
           }, 1000);
+          
+
+            
+          
          
 
         });
@@ -150,14 +159,3 @@ function validateForm() {
       }
 
 
-// Function to prevent the submit button's default behavior
-// function preventButtonReload(event) {
-//   event.preventDefault(); // Prevent the page from refreshing or submitting data
-//   console.log("Submit button clicked, but no reload or data submission occurred!");
-// }
-
-// Attach the function to the submit button
-// document.addEventListener("DOMContentLoaded", function() {
-//   const submitButton = document.querySelector("button[type='submit']"); // Adjust selector if needed
-//   submitButton.addEventListener("click", preventButtonReload);
-// });
