@@ -9,20 +9,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TPREDICTIONS | Dashboard</title>
   <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
-  <link rel="stylesheet" href="css/styles.css?v=20261027-betslip-filters-v1">
+  <link rel="stylesheet" href="css/styles.css?v=20261030-updater-monitor-v1">
 
   <script>
     
 
     if (localStorage.getItem("theme_+-----") == 'Light') {
       const stylesheet = document.querySelector("link");
-      stylesheet.href = 'css/styles2.css?v=20261027-betslip-filters-v1'
+      stylesheet.href = 'css/styles2.css?v=20261030-updater-monitor-v1'
 
     }
   </script>
 
 
-  <script src="js/mod.js?v=20261027-betslip-filters-v1"></script>
+  <script src="js/mod.js?v=20261030-updater-monitor-v1"></script>
   <script src="../js/allhandler.js"></script>
 
   <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon">
@@ -51,7 +51,7 @@
 
         </div>
         <div class="body">
-           <marquee id="text_"> Predict Now! 📈</marquee>
+           <marquee id="text_"> Predict Now! ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€ </marquee>
 
         </div>
         <footer>
@@ -138,27 +138,27 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
             <h2 id="hmen" class="text-2xl font-extrabold text-gray-900  whitec"><img
                 style="height:50px;width:50px; border-radius: 50%;display: inline;" src="../favicon.ico"> 
             </h2>
-            <button id="close-btn" class="text-2xl font-bold text-gray-500 hover:text-gray-900 whitec ">×</button>
+            <button id="close-btn" class="text-2xl font-bold text-gray-500 hover:text-gray-900 whitec ">ÃƒÆ’Ã¢â‚¬â€</button>
           </div>
           <a href="#"
             class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 ">
-            🏠 <span>Dashboard</span>
+            ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â  <span>Dashboard</span>
           </a>
           <a href="profile/index.html"
             class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
-            👤 <span>Profile</span>
+            ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤ <span>Profile</span>
           </a>
           <a href="posts/index.html"
             class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
-            📈 <span>Trends</span>
+            ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€  <span>Trends</span>
           </a>
           <a href="users/index.html"
             class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
-            👥 <span>Users</span>
+            ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¥ <span>Users</span>
           </a>
           <a href="#" onclick="logout()"
             class="flex items-center gap-2 text-lg text-gray-700 hover:text-indigo-600 transition-all duration-200 whitec">
-            🚪 <span>Log Out</span>
+            ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Âª <span>Log Out</span>
           </a>
         </div>
         <script>
@@ -228,6 +228,9 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
               <div></div>
             </div>
           </div>
+          <div id="match-source-attribution" class="match-source-attribution">
+            <a href="https://sportscore.com/" rel="dofollow" title="Sports data by SportScore">Powered by SportScore</a>
+          </div>
 
         </div>
       </div>
@@ -249,12 +252,14 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
 
         <!-- Header -->
         <h1 class="text-4xl font-bold mb-6 text-center">Detailed Data</h1>
-        <div style="opacity: 0.5;"  class="refresh-btn dark_theme" id="refreshBtn">
-          <span>↻</span>
-          <div class="cir"></div>
-          <div class="cir2"></div>
-          <div class="cir3"></div>
-        </div>
+        <button style="opacity: 0.5;" class="refresh-btn dark_theme" id="refreshBtn" type="button" aria-label="Refresh detailed data" title="Refresh detailed data">
+          <span class="refresh-icon" aria-hidden="true">↻</span>
+          <span class="refresh-label">Refresh data</span>
+          <span class="cir" aria-hidden="true"></span>
+          <span class="cir2" aria-hidden="true"></span>
+          <span class="cir3" aria-hidden="true"></span>
+        </button>
+        <p id="refresh-status" class="refresh-status" role="status" aria-live="polite">Refresh the saved match results and charts.</p>
         <script>
 
           if (localStorage.getItem("theme_+-----") == 'Dark') {
@@ -332,11 +337,37 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
 
           <div class="performance-mode" role="tablist" aria-label="Performance data source">
             <button id="performance-mode-simulated" class="performance-mode-button" type="button"
-              role="tab" aria-selected="true" onclick="switchPerformanceDataset('simulated')">Simulated</button>
+              role="tab" aria-selected="false" onclick="switchPerformanceDataset('simulated')">Simulated</button>
             <button id="performance-mode-real" class="performance-mode-button" type="button"
-              role="tab" aria-selected="false" onclick="switchPerformanceDataset('real')">Real-life</button>
-            <span id="performance-mode-note" class="performance-mode-note">Historical walk-forward backtest (earlier dates only)</span>
+              role="tab" aria-selected="true" onclick="switchPerformanceDataset('real')">Real-life</button>
+            <span id="performance-picker-model" class="performance-picker-model" aria-live="polite">Current live picker: loading model…</span>
+            <span id="performance-mode-note" class="performance-mode-note">Predictions are saved once; accuracy includes settled matches only.</span>
           </div>
+
+          <div id="performance-cohorts" class="performance-cohorts" role="group" aria-label="Real prediction timing">
+            <div class="performance-cohort-tabs" role="tablist" aria-label="Prediction timing">
+              <button id="performance-cohort-prematch" class="performance-cohort-button" type="button"
+                role="tab" aria-selected="true" onclick="switchPerformanceCohort('pre_match')">
+                Pre-match <span id="performance-cohort-prematch-count">— settled</span>
+              </button>
+              <button id="performance-cohort-live" class="performance-cohort-button" type="button"
+                role="tab" aria-selected="false" onclick="switchPerformanceCohort('live')">
+                Live snapshot <span id="performance-cohort-live-count">— settled</span>
+              </button>
+            </div>
+            <p id="performance-cohort-note" class="performance-cohort-note" aria-live="polite">
+              Pre-match forecasts are reported separately. Live snapshots lack live score and clock inputs, so they are not treated as in-play predictions.
+            </p>
+          </div>
+
+          <section id="performance-class-panel" class="performance-class-panel" aria-labelledby="performance-class-title">
+            <div class="performance-class-heading">
+              <h3 id="performance-class-title">Outcome-wise results</h3>
+              <span id="performance-class-sample">Settled picks in the selected cohort</span>
+            </div>
+            <div id="performance-outcome-metrics" class="performance-outcome-metrics" aria-live="polite"></div>
+            <p class="performance-class-footnote">Pick accuracy is correct picks divided by settled picks of that class. The actual-outcome counts describe only matches saved in this prediction ledger, not every fixture played.</p>
+          </section>
 
           <!-- Summary Cards -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -410,6 +441,92 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
             </table>
           </div>
 
+          <section id="updater-monitor" class="updater-monitor" aria-labelledby="updater-monitor-title">
+            <div class="updater-monitor-header">
+              <div>
+                <p class="updater-monitor-eyebrow">Background activity</p>
+                <h2 id="updater-monitor-title">Updater and model status</h2>
+                <p>Current source refresh, historical evaluation, live picker, and slip-selector details.</p>
+              </div>
+              <span data-monitor="monitor-error" class="monitor-inline-error" role="status" aria-live="polite"></span>
+            </div>
+            <div class="updater-monitor-grid">
+              <article class="updater-monitor-card">
+                <div class="monitor-card-heading"><h3>Live source</h3><span class="monitor-status-pill" data-monitor="live-status">Checking</span></div>
+                <strong class="monitor-primary" data-monitor="live-stage">Checking source status…</strong>
+                <p class="monitor-muted" data-monitor="live-detail"></p>
+                <dl class="monitor-facts">
+                  <div><dt>Fixtures</dt><dd data-monitor="live-count">—</dd></div>
+                  <div><dt>Last successful fetch</dt><dd data-monitor="live-last">—</dd></div>
+                  <div><dt>Source age</dt><dd data-monitor="live-age">—</dd></div>
+                  <div><dt>Poll timing</dt><dd data-monitor="live-duration">—</dd></div>
+                </dl>
+                <p class="monitor-footnote" data-monitor="live-counts">Live — · Upcoming — · Ended —</p>
+              </article>
+
+              <article class="updater-monitor-card">
+                <div class="monitor-card-heading"><h3>Chronological historical simulation</h3><span class="monitor-status-pill" data-monitor="simulation-status">Checking</span></div>
+                <strong class="monitor-primary" data-monitor="simulation-stage">Loading simulation status…</strong>
+                <p class="monitor-muted" data-monitor="simulation-detail"></p>
+                <div class="monitor-progress-track" role="progressbar" aria-label="Simulation progress" aria-valuemin="0" aria-valuemax="100">
+                  <span data-monitor="simulation-progress-bar"></span>
+                </div>
+                <p class="monitor-footnote"><span data-monitor="simulation-progress-label">Progress not reported</span> · <span data-monitor="simulation-data">Build input rows — · Last-date training — · Last published picks —</span></p>
+                <p class="monitor-footnote" data-monitor="simulation-outcomes">Last published outcomes —</p>
+                <p class="monitor-footnote" data-monitor="simulation-results">Last completed —</p>
+              </article>
+
+              <article class="updater-monitor-card">
+                <div class="monitor-card-heading"><h3>Current live picker</h3><span class="monitor-status-pill" data-monitor="picker-version">—</span></div>
+                <strong class="monitor-primary" data-monitor="picker-name">Loading picker model…</strong>
+                <dl class="monitor-facts">
+                  <div><dt>Promotion holdout accuracy</dt><dd data-monitor="picker-accuracy">—</dd></div>
+                  <div><dt>Promotion holdout coverage</dt><dd data-monitor="picker-coverage">—</dd></div>
+                </dl>
+                <p class="monitor-footnote" data-monitor="picker-training">—</p>
+                <p class="monitor-footnote">Promoted <span data-monitor="picker-promoted">—</span></p>
+                <p class="monitor-muted">Latest incumbent re-evaluation</p>
+                <dl class="monitor-facts">
+                  <div><dt>Accuracy</dt><dd data-monitor="picker-latest-accuracy">—</dd></div>
+                  <div><dt>Coverage</dt><dd data-monitor="picker-latest-coverage">—</dd></div>
+                  <div><dt>Correct picks</dt><dd data-monitor="picker-latest-correct">—</dd></div>
+                </dl>
+                <p class="monitor-footnote" data-monitor="picker-latest-sample">No fresh comparison recorded</p>
+              </article>
+
+              <article class="updater-monitor-card monitor-card-wide">
+                <div class="monitor-card-heading"><h3>Model training and comparison</h3><span class="monitor-status-pill" data-monitor="training-status">Idle</span></div>
+                <strong class="monitor-primary" data-monitor="training-stage">Waiting for new settled data</strong>
+                <p class="monitor-muted" data-monitor="training-detail"></p>
+                <p class="monitor-footnote" data-monitor="training-last-run">Last evaluation —</p>
+                <p class="monitor-footnote"><span data-monitor="training-progress">No candidate run active</span> · <span data-monitor="training-data">Eligible — · Train — · Holdout —</span></p>
+                <p class="monitor-footnote" data-monitor="training-sources">Backfill — · Real — · Probability-only — · Historical —</p>
+                <div class="monitor-candidate-list" data-monitor="candidate-models" aria-live="polite"></div>
+              </article>
+
+              <article class="updater-monitor-card monitor-card-wide">
+                <div class="monitor-card-heading"><h3>Dedicated training process</h3><span class="monitor-status-pill" data-monitor="worker-status">Starting</span></div>
+                <strong class="monitor-primary" data-monitor="worker-stage">Waiting for worker status…</strong>
+                <p class="monitor-muted" data-monitor="worker-detail"></p>
+                <p class="monitor-footnote" data-monitor="worker-process">Process — · Active job — · Queue empty</p>
+                <p class="monitor-footnote" data-monitor="worker-last-job">Last job —</p>
+              </article>
+
+              <article class="updater-monitor-card monitor-card-wide">
+                <div class="monitor-card-heading"><h3>Slip selector</h3><span class="monitor-status-pill" data-monitor="slip-status">Ready</span></div>
+                <strong class="monitor-primary" data-monitor="slip-stage">Loading selector status…</strong>
+                <p class="monitor-muted" data-monitor="slip-detail"></p>
+                <p class="monitor-footnote">Selected selector: <span data-monitor="slip-model">—</span></p>
+                <p class="monitor-footnote" data-monitor="slip-training">Training — · Evaluation — · Holdout picks —</p>
+                <p class="monitor-footnote" data-monitor="slip-quality">Accuracy — · Coverage — · Settled slips —</p>
+                <p class="monitor-footnote" data-monitor="slip-comparison">Baseline — · Challenger —</p>
+                <p class="monitor-footnote" data-monitor="slip-combinations">Pattern training —</p>
+                <p class="monitor-footnote" data-monitor="slip-combination-scores">Combination size comparisons —</p>
+              </article>
+            </div>
+            <p class="updater-monitor-updated" data-monitor="monitor-updated">Waiting for updater status…</p>
+          </section>
+
         </div>
 
 
@@ -429,29 +546,42 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
         let mloader2= document.getElementById('mainloader2')
 
         let refreshBtn=document.getElementById('refreshBtn')
-        refreshBtn.addEventListener('click',()=>{
+        if (refreshBtn) refreshBtn.addEventListener('click',()=>{
+              if (typeof refreshDetailedDataBoth === 'function') {
+                void refreshDetailedDataBoth();
+                return;
+              }
               if(localStorage.getItem('refresh')=="allow"){
-                    mloader2.classList.remove('hide')
-               if (localStorage.getItem("theme_+-----") == 'Dark'){
+                    if (mloader2) {
+                      mloader2.classList.remove('hide')
+                      const loaderState = document.getElementById('state_loader11')
+                      if (loaderState) loaderState.textContent = 'Refreshing saved match results, accuracy and charts…'
+                    }
+               if (mloader2 && localStorage.getItem("theme_+-----") == 'Dark'){
                  mloader2.style.backgroundColor="rgba(0, 0, 0, 0.8)"
-
-               }else{
-                // mloader2.style.backgroundColor="rgba(0, 0, 0, 0.8)"
-                mloader2.style.background="rgba(0, 0, 0, 0.8) !important"
+               } else if (mloader2) {
+                mloader2.style.backgroundColor="rgba(255, 255, 255, 0.92)"
                }
              
-              dtdata.style.minHeight='500px'
-              dtdata.style.maxHeight='500px'
-              dtdata.style.overflow='hidden'
+              if (dtdata) {
+                dtdata.style.minHeight='320px'
+                dtdata.style.maxHeight='none'
+                dtdata.style.overflow='visible'
+              }
+              if (typeof setDetailedRefreshFeedback === 'function') {
+                setDetailedRefreshFeedback('loading', 'Refreshing detailed data. This may take a few seconds.')
+              }
               getproducts_2_3(false)
               localStorage.setItem('refresh','disallow')
-              refreshBtn.style.opacity='0.5'
-              refreshBtn.style.cursor="none"
+              refreshBtn.style.opacity='0.65'
+              refreshBtn.style.cursor="wait"
               refreshBtn.classList.remove('refresh-active')
 
 
               }else{
-                
+                if (typeof setDetailedRefreshFeedback === 'function') {
+                  setDetailedRefreshFeedback('busy', 'A refresh is already running or the refresh cooldown has not finished.')
+                }
               }
           
               // Remove all <canvas> elements 
@@ -470,6 +600,7 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
  
 
         })
+        if (typeof initializeUpdaterMonitor === 'function') initializeUpdaterMonitor()
         </script>
 
 
@@ -484,7 +615,8 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
   </footer>
   </div>
   <script src="js/verify.js"></script>
-  <script src="js/main.js?v=20261027-betslip-filters-v1"></script>
+  <script src="js/predictor-view.js?v=20261029-live-picker-report-v1"></script>
+  <script src="js/main.js?v=20261030-performance-balance-v1"></script>
   
 
   <script>
@@ -514,14 +646,14 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
 
    let valuesd={
       "Predicter":{
-        "text": "Pedict Now! 📈",
-        "text2": "Try Liverpool vs Chelsea 👤",
+        "text": "Pedict Now! ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€ ",
+        "text2": "Try Liverpool vs Chelsea ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤",
         "onclick": `switchContent('predicter')`,
         "link":"/Predicter",
         "reason": false
       },
       "Sys Bets":{
-        "text": "See Wining slips  📈 !!",
+        "text": "See Wining slips  ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€  !!",
         "onclick":"switchContent('analysis')",
          "link":"/Slips",
           "reason": false
@@ -529,7 +661,7 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
       },
 
       "Bio":{
-        "text": " 👤: Update Your Bio !!",
+        "text": " ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤: Update Your Bio !!",
         "href": `${getHomePath()}/Logged/profile/index.html`,
         "link": "/profile#Bio",
         "reason":"Bio",
@@ -537,7 +669,7 @@ if (localStorage.getItem("theme_+-----") == 'Dark') {}else{
 
       },
       "Address":{
-        "text": " 👤: You did not add an Address !!",
+        "text": " ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤: You did not add an Address !!",
         "href": `${getHomePath()}/Logged/profile/index.html`,
         "link": "/profile#Address",
         "reason":"Address",

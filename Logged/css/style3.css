@@ -2783,6 +2783,10 @@ body {
   color: #1E40AF;
   animation: pulse 1.2s infinite alternate;
 }
+.match-status.suspended { color: #78350f; background: #fef3c7; }
+.dark-mode22 .match-status.suspended { color: #fde68a; background: #422006; }
+.match-status.postponed { color: #7c2d12; background: #ffedd5; }
+.dark-mode22 .match-status.postponed { color: #fed7aa; background: #431407; }
 
 @media (max-width: 640px) {
   .slip-card {

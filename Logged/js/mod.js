@@ -12,13 +12,20 @@ let pieChart=null;
 let lineChart=null;
 let lineChart2=null;
 let lineChart3=null;
-let activePerformanceDataset = 'simulated';
+let activePerformanceDataset = 'real';
+let activePredictionCohort = 'pre_match';
 let performanceRequestVersion = 0;
 let performanceRenderEpoch = 0;
+let simulationStatusPollTimer = null;
+let displayedSimulationSignature = '';
+let detailedRefreshInFlight = false;
+let detailedRefreshCooldownUntil = 0;
+let detailedRefreshCooldownTimer = null;
+const DETAILED_REFRESH_COOLDOWN_MS = 8000;
 const performanceAnimationTimers = new Set();
 const performanceOutcomeSelection = {
-  simulated: { group: 'won', subtabs: { won: 0, lost: 0 } },
-  real: { group: 'won', subtabs: { won: 0, lost: 0 } },
+  simulated: { group: 'won', subtabs: { won: 0, lost: 0 }, pages: {} },
+  real: { group: 'won', subtabs: { won: 0, lost: 0 }, pages: {} },
 };
 
 function clearPerformanceAnimations() {
@@ -77,6 +84,317 @@ function clearPerformanceView(message = '') {
   if (stats) stats.textContent = '';
 }
 
+function updatePickerModelBadge(model) {
+  const badge = document.getElementById('performance-picker-model');
+  if (!badge) return;
+  const name = model && typeof model.name === 'string'
+    ? model.name : 'Picker model status unavailable';
+  const version = Number(model && model.model_version);
+  badge.textContent = `Current live picker: ${name}`;
+  badge.title = Number.isFinite(version) && version > 0
+    ? `Model version ${version}` : 'Model selected for live match predictions';
+}
+
+function monitorSetText(key, value) {
+  const node = document.querySelector(`[data-monitor="${key}"]`);
+  if (node) node.textContent = value === null || value === undefined || value === '' ? '—' : String(value);
+  return node;
+}
+
+function monitorDate(value) {
+  if (value === null || value === undefined || value === '') return 'Not recorded';
+  let date = typeof value === 'number' ? new Date(value * 1000) : new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function monitorPercent(value) {
+  if (value === null || value === undefined || value === '') return 'Not available';
+  const number = Number(value);
+  return Number.isFinite(number) ? `${number.toFixed(1)}%` : 'Not available';
+}
+
+function updateMonitorPill(key, value, fallback = 'Unknown') {
+  const node = monitorSetText(key, value || fallback);
+  if (!node) return;
+  const state = String(value || '').toLowerCase();
+  node.dataset.state = ['ready', 'complete', 'fresh', 'accepted'].includes(state) ? 'good'
+    : ['running', 'queued', 'waiting'].includes(state) ? 'working'
+    : ['failed', 'degraded', 'stale', 'deferred'].includes(state) ? 'attention' : 'neutral';
+}
+
+function renderUpdaterMonitor(payload) {
+  if (!payload || typeof payload !== 'object') return;
+  const live = payload.live_updater || {};
+  const snapshotAge = live.source_age_seconds === null || live.source_age_seconds === undefined
+    ? NaN : Number(live.source_age_seconds);
+  const sourceState = live.status !== 'running' || !Number.isFinite(snapshotAge) || snapshotAge > 180
+    ? 'Delayed' : 'Fresh';
+  updateMonitorPill('live-status', sourceState, 'Delayed');
+  monitorSetText('live-stage', live.status === 'stale' ? 'Updater status has stopped updating' : (live.stage || 'Waiting for source update'));
+  const liveDetail = live.status === 'stale'
+    ? `No updater heartbeat for ${live.activity_age_seconds ?? 'an unknown number of'} seconds.`
+    : live.activity_status === 'running' ? (live.detail || '')
+      : (live.last_attempt_error || live.detail || '');
+  monitorSetText('live-detail', liveDetail);
+  monitorSetText('live-count', live.fixture_count !== null && live.fixture_count !== undefined && Number.isFinite(Number(live.fixture_count)) ? Number(live.fixture_count).toLocaleString() : '—');
+  monitorSetText('live-counts', `Live ${Number(live.state_counts?.live) || 0} · Upcoming ${Number(live.state_counts?.upcoming) || 0} · Ended ${Number(live.state_counts?.ended) || 0}`);
+  monitorSetText('live-last', monitorDate(live.last_successful_fetch_at));
+  monitorSetText('live-age', Number.isFinite(snapshotAge) ? `${Math.floor(snapshotAge / 60)}m ${snapshotAge % 60}s ago` : 'No successful fetch recorded');
+  const lastCycleSeconds = live.last_cycle_seconds === null || live.last_cycle_seconds === undefined
+    ? NaN : Number(live.last_cycle_seconds);
+  const stageElapsed = live.elapsed_seconds === null || live.elapsed_seconds === undefined
+    ? NaN : Number(live.elapsed_seconds);
+  const targetSeconds = Number(live.target_cycle_seconds) || 10;
+  const pollElapsed = Number.isFinite(stageElapsed)
+    ? stageElapsed + (live.activity_status === 'running' ? (Number(live.activity_age_seconds) || 0) : 0)
+    : NaN;
+  const durationText = live.activity_status === 'running' && Number.isFinite(pollElapsed)
+    ? `Current poll ${pollElapsed.toFixed(1)}s · last cycle ${Number.isFinite(lastCycleSeconds) ? `${lastCycleSeconds.toFixed(1)}s` : '—'} · target ${targetSeconds}s`
+    : Number.isFinite(lastCycleSeconds) ? `${lastCycleSeconds.toFixed(1)}s · target ${targetSeconds}s` : 'Not recorded yet';
+  monitorSetText('live-duration', durationText);
+
+  const simulation = payload.simulation || {};
+  updateMonitorPill('simulation-status', simulation.status, 'Not built');
+  monitorSetText('simulation-stage', simulation.stage || simulation.message || 'Waiting for settled data');
+  monitorSetText('simulation-detail', simulation.message || '');
+  const progressValue = simulation.progress;
+  const progress = progressValue === null || progressValue === undefined
+    ? (['ready', 'complete_empty'].includes(String(simulation.status || '').toLowerCase()) ? 100 : NaN)
+    : Number(progressValue);
+  const progressBar = document.querySelector('[data-monitor="simulation-progress-bar"]');
+  if (progressBar) {
+    progressBar.style.width = `${Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : 0}%`;
+    progressBar.setAttribute('aria-valuenow', String(Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : 0));
+  }
+  const simulationProgress = Number.isFinite(progress)
+    ? `${Math.max(0, Math.min(100, Math.round(progress)))}%`
+    : (simulation.processed !== null && simulation.processed !== undefined && simulation.total
+      ? `${simulation.processed} / ${simulation.total}` : 'Progress not reported');
+  monitorSetText('simulation-progress-label', simulationProgress);
+  monitorSetText('simulation-data', `Build input rows ${simulation.available_matches ?? '—'} · Last-date training ${simulation.training_matches ?? '—'} · Last published picks ${simulation.total_predictions ?? '—'}`);
+  const resultCounts = simulation.result_counts || {};
+  const simWins = Number(resultCounts.win) || 0;
+  const simDrawWins = Number(resultCounts.drawW) || 0;
+  const simDrawMisses = Number(resultCounts.drawL) || 0;
+  const simOtherLosses = Number(resultCounts.loss) || 0;
+  const simScored = simWins + simDrawWins + simDrawMisses + simOtherLosses;
+  monitorSetText('simulation-outcomes', simScored
+    ? `Last published: ${simWins + simDrawWins}/${simScored} correct (${((simWins + simDrawWins) * 100 / simScored).toFixed(1)}%) · ${simWins} straight wins · ${simDrawWins} draw wins · ${simDrawMisses} draw misses · ${simOtherLosses} other losses`
+    : 'No published simulation outcomes yet');
+  monitorSetText('simulation-results', `Last published ${monitorDate(simulation.last_completed_at)}`);
+
+  const picker = payload.picker || {};
+  monitorSetText('picker-name', `${picker.name || 'Picker model not identified'}${picker.feature_count ? ` · ${picker.feature_count} features` : ''}`);
+  monitorSetText('picker-version', picker.model_version ? `Version ${picker.model_version}` : 'Version not recorded');
+  monitorSetText('picker-accuracy', monitorPercent(picker.holdout_accuracy));
+  monitorSetText('picker-coverage', monitorPercent(picker.holdout_coverage));
+  monitorSetText('picker-training', `${picker.training_matches ?? '—'} training examples · ${picker.holdout_predictions ?? '—'} holdout picks`);
+  monitorSetText('picker-promoted', monitorDate(picker.promoted_at));
+  const pickerEvaluation = picker.latest_evaluation || {};
+  monitorSetText('picker-latest-accuracy', monitorPercent(pickerEvaluation.accuracy));
+  monitorSetText('picker-latest-coverage', monitorPercent(pickerEvaluation.coverage));
+  const latestCorrect = pickerEvaluation.correct == null ? Number.NaN : Number(pickerEvaluation.correct);
+  const latestPredicted = pickerEvaluation.predicted == null ? Number.NaN : Number(pickerEvaluation.predicted);
+  monitorSetText('picker-latest-correct', Number.isFinite(latestCorrect)
+    ? `${latestCorrect} / ${Number.isFinite(latestPredicted) ? latestPredicted : '—'}` : 'Not evaluated');
+  const latestMatches = pickerEvaluation.matches == null ? Number.NaN : Number(pickerEvaluation.matches);
+  const latestFeatures = pickerEvaluation.feature_count == null ? Number.NaN : Number(pickerEvaluation.feature_count);
+  const latestSample = Number.isFinite(latestMatches)
+    ? `${latestMatches} shared holdout matches · ${Number.isFinite(latestPredicted) ? latestPredicted : '—'} picks${latestFeatures > 0 ? ` · ${latestFeatures}-feature comparison inputs` : ''} · ${monitorDate(pickerEvaluation.at)}`
+    : 'No fresh comparison recorded';
+  monitorSetText('picker-latest-sample', latestSample);
+
+  const training = payload.model_training || {};
+  updateMonitorPill('training-status', training.status, 'Idle');
+  monitorSetText('training-stage', training.stage || 'Waiting for new settled data');
+  monitorSetText('training-detail', training.detail || '');
+  const trainingCount = Number(training.candidate_total);
+  const candidateIndex = Number(training.candidate_index);
+  monitorSetText('training-progress', Number.isFinite(trainingCount) && trainingCount > 0
+    ? `${Math.min(candidateIndex || 0, trainingCount)} of ${trainingCount} candidates`
+    : 'No candidate run active');
+  monitorSetText('training-data', `Eligible ${training.available_matches ?? '—'} · Train ${training.training_matches ?? '—'} · Holdout ${training.holdout_matches ?? '—'}`);
+  const lastEvaluation = training.last_evaluation || {};
+  if (lastEvaluation.at) {
+    const outcome = lastEvaluation.result === 'promoted'
+      ? 'A candidate was promoted'
+      : lastEvaluation.result === 'deferred'
+        ? 'No candidate was promoted; incumbent retained'
+        : (lastEvaluation.result || 'result not recorded');
+    const split = lastEvaluation.available_matches !== null && lastEvaluation.available_matches !== undefined
+      ? `${lastEvaluation.available_matches} eligible · ${lastEvaluation.train_matches ?? '—'} train / ${lastEvaluation.holdout_matches ?? '—'} holdout`
+      : `${lastEvaluation.train_matches ?? '—'} train / ${lastEvaluation.holdout_matches ?? '—'} holdout`;
+    monitorSetText('training-last-run', `Last evaluation ${monitorDate(lastEvaluation.at)} · ${outcome} · ${split}`);
+  } else {
+    monitorSetText('training-last-run', 'No completed model evaluation is recorded yet.');
+  }
+  const sourceCounts = training.source_counts || {};
+  const sourceSummary = Object.keys(sourceCounts).length
+    ? `Backfill ${sourceCounts.feature_backfill ?? '—'} · Real ${sourceCounts.real ?? '—'} · Probability-only ${sourceCounts.probability_only ?? '—'} · Historical ${sourceCounts.historical ?? '—'}`
+    : 'Training-source breakdown not recorded for this evaluation';
+  monitorSetText('training-sources', sourceSummary);
+  const candidatesNode = document.querySelector('[data-monitor="candidate-models"]');
+  if (candidatesNode) {
+    candidatesNode.replaceChildren();
+    (Array.isArray(training.candidates) ? training.candidates : []).forEach(candidate => {
+      const row = document.createElement('div');
+      row.className = 'monitor-candidate-row';
+      const name = document.createElement('strong');
+      name.textContent = `${candidate.name || candidate.feature_count + '-feature'} model`;
+      const facts = document.createElement('span');
+      const accuracy = candidate.accuracy !== null && candidate.accuracy !== undefined && Number.isFinite(Number(candidate.accuracy)) ? monitorPercent(candidate.accuracy) : 'not scored';
+      const coverage = candidate.coverage !== null && candidate.coverage !== undefined && Number.isFinite(Number(candidate.coverage)) ? monitorPercent(candidate.coverage) : 'coverage not scored';
+      const classes = candidate.training_class_counts || {};
+      const classSummary = `Team A ${classes.teamAwin ?? '—'} · Draw ${classes.draw ?? '—'} · Team B ${classes.teamBwin ?? '—'}`;
+      const trainingRows = candidate.training_matches !== null && candidate.training_matches !== undefined
+        ? `${candidate.training_matches} training rows` : 'training-row count not recorded';
+      const detail = candidate.detail ? ` · ${candidate.detail}` : '';
+      facts.textContent = `${String(candidate.state || 'waiting').replaceAll('_', ' ')} · ${trainingRows} · ${classSummary} · ${accuracy} accuracy · ${coverage} coverage${detail}`;
+      row.append(name, facts);
+      candidatesNode.appendChild(row);
+    });
+    if (!candidatesNode.childElementCount) {
+      const note = document.createElement('p');
+      note.className = 'monitor-muted';
+      note.textContent = 'Candidate comparisons appear here when new eligible settled outcomes arrive.';
+      candidatesNode.appendChild(note);
+    }
+  }
+
+  const worker = payload.training_worker || {};
+  updateMonitorPill('worker-status', worker.status, 'Starting');
+  monitorSetText('worker-stage', worker.stage || 'Waiting for worker status…');
+  monitorSetText('worker-detail', worker.detail || 'Training runs separately from live fixture polling.');
+  const queuedJobs = Array.isArray(worker.queued_jobs) ? worker.queued_jobs : [];
+  const activeJob = worker.active_job ? String(worker.active_job).replaceAll('_', ' ') : 'idle';
+  monitorSetText(
+    'worker-process',
+    `PID ${worker.process_id ?? '—'} · Active ${activeJob} · ${queuedJobs.length ? `Queued ${queuedJobs.join(', ')}` : 'Queue empty'}`
+  );
+  const lastJob = worker.last_job
+    ? `${String(worker.last_job).replaceAll('_', ' ')} · ${worker.last_job_status || 'status unavailable'}${Number.isFinite(Number(worker.last_job_duration_seconds)) ? ` · ${Number(worker.last_job_duration_seconds).toFixed(1)}s` : ''}`
+    : 'No job completed yet';
+  const heartbeatAge = Number(worker.heartbeat_age_seconds);
+  const heartbeat = Number.isFinite(heartbeatAge) ? `${heartbeatAge}s ago` : monitorDate(worker.heartbeat_at);
+  monitorSetText('worker-last-job', `Last job ${lastJob} · Heartbeat ${heartbeat}`);
+
+  const slips = payload.slip_selector || {};
+  updateMonitorPill('slip-status', slips.status, 'Ready');
+  monitorSetText('slip-stage', slips.stage || 'Latest saved evaluation');
+  monitorSetText('slip-detail', slips.detail || (slips.updated_at ? `Latest report ${monitorDate(slips.updated_at)}` : ''));
+  monitorSetText('slip-model', slips.selector || 'Selector not recorded');
+  monitorSetText('slip-training', `Training ${slips.train_matches ?? '—'} · Evaluation ${slips.evaluation_matches ?? '—'} · Holdout picks ${slips.holdout_predictions ?? '—'}`);
+  monitorSetText('slip-quality', `Accuracy ${monitorPercent(slips.accuracy)} · Coverage ${monitorPercent(slips.coverage)} · Settled slips ${slips.simulated_slips ?? '—'}`);
+  const comparison = slips.selector_comparison || {};
+  monitorSetText('slip-comparison', `Baseline ${monitorPercent(comparison.baseline_win_rate)} · Challenger ${monitorPercent(comparison.combination_win_rate)} · ${comparison.evaluated_windows ?? '—'} forward windows`);
+  const combinations = slips.combination_training || {};
+  const searchedFractions = Array.isArray(combinations.search_sample_fractions)
+    ? combinations.search_sample_fractions.map(value => `${Math.round(Number(value) * 100)}%`).join(', ')
+    : '';
+  const activeFraction = slips.selector === 'combination-pattern selector' &&
+    slips.combination_sample_fraction !== null && slips.combination_sample_fraction !== undefined
+    ? `Active sample ${Math.round(Number(slips.combination_sample_fraction) * 100)}%${slips.combination_sample_count !== null && slips.combination_sample_count !== undefined ? ` (${Number(slips.combination_sample_count).toLocaleString()} combinations)` : ''}`
+    : slips.selector === 'combination-pattern selector'
+      ? 'Active combination sample not recorded' : 'No combination sample active';
+  const searchState = slips.combination_search_complete
+    ? `search completed to ${Math.round(Number(slips.combination_search_maximum_fraction || 0) * 100)}%`
+    : 'search status not recorded';
+  monitorSetText('slip-combinations', `Pattern training ${combinations.synthetic_same_date_combinations ?? '—'} sampled of ${combinations.possible_training_combinations ?? '—'} possible across ${combinations.training_dates ?? '—'} dates · ${activeFraction} · ${searchState}${searchedFractions ? ` · tried ${searchedFractions}` : ''}`);
+  const sizeScores = Array.isArray(combinations.search_results)
+    ? combinations.search_results.map(result => {
+      const size = Math.round(Number(result.challenger_sample_fraction || 0) * 100);
+      const challenger = result.challenger_win_rate === null || result.challenger_win_rate === undefined
+        ? '—' : `${Number(result.challenger_win_rate).toFixed(1)}%`;
+      const incumbent = result.incumbent_win_rate === null || result.incumbent_win_rate === undefined
+        ? '—' : `${Number(result.incumbent_win_rate).toFixed(1)}%`;
+      return `${size}% sample: ${challenger} vs ${incumbent}`;
+    }).join(' · ')
+    : '';
+  monitorSetText('slip-combination-scores', sizeScores || 'No combination-size comparison recorded.');
+  monitorSetText('monitor-updated', `Status read ${monitorDate(payload.generated_at)} · training status ${monitorDate(training.updated_at)}`);
+}
+
+function refreshUpdaterMonitor() {
+  if (document.hidden || !document.getElementById('updater-monitor')) return;
+  fetch(line + '/products', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'updater_monitor' }),
+    cache: 'no-store'
+  }).then(response => {
+    if (!response.ok) throw new Error(`Monitor request failed (${response.status})`);
+    return response.json();
+  }).then(renderUpdaterMonitor).catch(() => {
+    monitorSetText('monitor-error', 'Updater status could not be reached.');
+  });
+}
+
+function initializeUpdaterMonitor() {
+  if (!document.getElementById('updater-monitor')) return;
+  refreshUpdaterMonitor();
+  window.setInterval(refreshUpdaterMonitor, 5000);
+}
+
+function simulationEmptyMessage(status) {
+  const state = String(status && status.status || '').toLowerCase();
+  if (state === 'running' || state === 'queued') {
+    return 'The chronological simulation is rebuilding from settled match data. Results will appear here when the build finishes.';
+  }
+  if (state === 'failed') {
+    const detail = String(status && status.error || '').trim();
+    return detail
+      ? `The latest simulation build failed: ${detail}`
+      : 'The latest simulation build failed. The previous completed results are preserved.';
+  }
+  if (state === 'complete_empty') {
+    return 'The simulation finished, but the current model did not make eligible picks for the settled matches in its replay.';
+  }
+  return 'No simulated results have been published yet. The updater builds this view from settled match data.';
+}
+
+function pollSimulationBuildStatus() {
+  if (simulationStatusPollTimer) clearTimeout(simulationStatusPollTimer);
+  simulationStatusPollTimer = null;
+  if (activePerformanceDataset !== 'simulated') return;
+  simulationStatusPollTimer = setTimeout(() => {
+    fetch(line + '/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'analysis_status' })
+    })
+      .then(response => {
+        if (!response.ok) throw new Error(`Simulation status request failed (${response.status})`);
+        return response.json();
+      })
+      .then(payload => {
+        if (activePerformanceDataset !== 'simulated') return;
+        updatePickerModelBadge(payload && payload.picker_model);
+        const status = payload && payload.simulation_status || {};
+        const state = String(status.status || '').toLowerCase();
+        if (state === 'running' || state === 'queued') {
+          pollSimulationBuildStatus();
+          return;
+        }
+        const completedSignature = String(status.last_completed_signature || '');
+        if (completedSignature && completedSignature !== displayedSimulationSignature) {
+          getproducts_2_3(true, 'simulated');
+          return;
+        }
+        if (state === 'failed') {
+          const empty = document.getElementById('performance-empty-state');
+          const visibleCount = Number(document.getElementById('total-matches')?.textContent);
+          if (empty && (!Number.isFinite(visibleCount) || visibleCount === 0)) {
+            empty.textContent = simulationEmptyMessage(status);
+          }
+        }
+      })
+      .catch(() => {
+        if (activePerformanceDataset === 'simulated') pollSimulationBuildStatus();
+      });
+  }, 15000);
+}
+
 function matchProbabilityLabel(value) {
   if (value === null || value === undefined || value === '') return '—';
   const probability = Number(value);
@@ -87,6 +405,27 @@ function matchProbabilityWidth(value) {
   if (value === null || value === undefined || value === '') return 0;
   const probability = Number(value);
   return Number.isFinite(probability) ? Math.max(0, Math.min(100, probability)) : 0;
+}
+
+function escapeMatchAttribute(value) {
+  return String(value || '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
+function matchVerificationBadgeMarkup(card) {
+  const status = String(card && card.verification_status || 'not_verified').toLowerCase();
+  const labels = {
+    verified: ['Verified', 'match-verification--verified'],
+    conflict: ['Conflict', 'match-verification--conflict'],
+    not_verified: ['Not verified', 'match-verification--unverified']
+  };
+  const [label, style] = labels[status] || labels.not_verified;
+  const sources = Array.isArray(card && card.verification_sources)
+    ? card.verification_sources.filter(Boolean).join(', ') : '';
+  const reason = String(card && card.verification_reason || '').trim();
+  const title = [reason, sources ? `Sources: ${sources}` : 'No independent source confirmation'].filter(Boolean).join(' ');
+  return `<span class="match-verification-badge ${style}" title="${escapeMatchAttribute(title)}" aria-label="${label}: ${escapeMatchAttribute(title)}">${label}</span>`;
 }
 
 function populatePerformanceTable(tbody, matches) {
@@ -428,12 +767,12 @@ refreshBtn3.style.opacity='0.5'
       const correctCount = Number(summary.correctCount) || 0;
       const avgSourceProbability = Number(summary.avgSourceProbability) || 0;
 
-      const safeAvgConfidence = Number.isFinite(avgSourceProbability) ? avgSourceProbability : 0;
+      const safeAvgSourceProbability = Number.isFinite(avgSourceProbability) ? avgSourceProbability : 0;
       //remove the loader
 
 
       let ptagstate3 = document.getElementById('state_loader')
-      if (ptagstate3) ptagstate3.textContent = 'Are you TechNifyied?'
+      if (ptagstate3) ptagstate3.textContent = 'Saved prediction results are ready.'
       let ldata2 = document.getElementById('ldata')
       if (ldata2) ldata2.classList.add('checked')
       let loader = document.querySelector('.loading-container')
@@ -443,7 +782,7 @@ refreshBtn3.style.opacity='0.5'
       // Animate summary counters over 2000ms.
       animateNumber("total-matches", 0, totalMatches, 6000);
       animateNumber("accuracy", 0, settledMatches.length ? (correctCount / settledMatches.length) * 100 : 0, 10000, '%');
-      animateNumber("avg-source-probability", 0, safeAvgConfidence, 10000, '%');
+      animateNumber("avg-source-probability", 0, safeAvgSourceProbability, 10000, '%');
 
       const finalPieData = Array.isArray(summary.finalPieData) ? summary.finalPieData : [0, 0, 0, 0, 0];
 
@@ -478,7 +817,7 @@ refreshBtn3.style.opacity='0.5'
         pieChart.update();
         return pieFrame >= totalPieFrames;
       }, 50, renderEpoch);
-      //  const summaryData = { finalPieData, allMatches, avgSourceProbability,correctCount, totalMatches,winMatches,lossMatches,finalWinData,finalLossData};
+      //  const summaryData = { finalPieData, allMatches, avgSourceProbability, correctCount, totalMatches,winMatches,lossMatches,finalWinData,finalLossData};
       // --- Line Chart Animation ---
       // Extract the win and loss datasets.
       const winMatches = Array.isArray(summary.winMatches) ? summary.winMatches : [];
@@ -596,9 +935,72 @@ function updatecontent4() {
   }
 }
 
+function updateBetslipPerformance(summary) {
+  const panel = document.getElementById('betslip-performance');
+  if (!panel) return;
+  const multi = summary && summary.multi_bet && typeof summary.multi_bet === 'object'
+    ? summary.multi_bet : {};
+  const single = summary && summary.single_bet && typeof summary.single_bet === 'object'
+    ? summary.single_bet : {};
+  const currency = amount => `R${(Number.isFinite(Number(amount)) ? Number(amount) : 0).toLocaleString('en-ZA', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  })}`;
+  const multiProfit = Number(multi.profit) || 0;
+  const multiLoss = Number(multi.loss) || 0;
+  const singleProfit = Number(single.profit) || 0;
+  const singleLoss = Number(single.loss) || 0;
+  const multiDeposit = Number(multi.deposit) || 0;
+  const singleDeposit = Number(single.deposit) || 0;
+  const multiBalance = multiDeposit + multiProfit - multiLoss;
+  const singleBalance = singleDeposit + singleProfit - singleLoss;
+  const values = {
+    'multi-deposit': currency(multiDeposit),
+    'multi-loss': currency(multi.loss),
+    'multi-profit': currency(multi.profit),
+    'multi-balance': currency(multiBalance),
+    'multi-won-count': Number(multi.won) || 0,
+    'multi-lost-count': Number(multi.lost) || 0,
+    'multi-open-count': Number(multi.open) || 0,
+    'multi-open-stake': currency(multi.open_stake),
+    'single-deposit': currency(singleDeposit),
+    'single-loss': currency(single.loss),
+    'single-profit': currency(single.profit),
+    'single-balance': currency(singleBalance),
+    'single-settled-count': Number(single.settled) || 0,
+    'single-won-count': Number(single.won) || 0,
+    'single-lost-count': Number(single.lost) || 0
+  };
+  Object.entries(values).forEach(([key, value]) => {
+    const node = panel.querySelector(`[data-performance="${key}"]`);
+    if (node && node.textContent !== value) node.textContent = value;
+  });
+  [
+    ['multi-warning', Number(multi.missing_odds) || 0, 'winning slip(s)'],
+    ['single-warning', Number(single.missing_odds) || 0, 'winning match(es)']
+  ].forEach(([key, count, label]) => {
+    const node = panel.querySelector(`[data-performance="${key}"]`);
+    if (!node) return;
+    node.hidden = count <= 0;
+    node.textContent = count > 0
+      ? `${count} ${label} excluded from profit because valid odds are unavailable.`
+      : '';
+  });
+  [['multi-balance', multiBalance, multiDeposit], ['single-balance', singleBalance, singleDeposit]].forEach(([key, balance, deposit]) => {
+    const node = panel.querySelector(`[data-performance="${key}"]`);
+    if (!node) return;
+    const difference = balance - deposit;
+    node.classList.toggle('is-positive', difference > 0.000001);
+    node.classList.toggle('is-negative', difference < -0.000001);
+  });
+}
+
 function product4() {
-  if (liveSlipsFetchBusy) return;
+  if (liveSlipsFetchBusy) {
+    window._betslipRefreshQueued = true;
+    return;
+  }
   liveSlipsFetchBusy = true;
+  window._betslipRefreshQueued = false;
   fetch(line + '/betslips_', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -612,9 +1014,97 @@ function product4() {
     .then(data4 => {
       const container = document.getElementById('betslip-container');
       if (!container) return;
-      const matches = data4 && data4.slips && typeof data4.slips === 'object' ? data4.slips : {};
-      const stake = 20;
-      const slipsByCategory = { pending: [], unresolved: [], won: [], lost: [], completed: [] };
+      const savedDataset = window.activeBetslipDataset;
+      const activeSlipDataset = savedDataset === 'simulated' ? 'simulated' : 'real';
+      const selectedSlips = activeSlipDataset === 'simulated'
+        ? data4 && data4.simulated_slips
+        : data4 && data4.slips;
+      const matches = selectedSlips && typeof selectedSlips === 'object' ? selectedSlips : {};
+      const realSlips = data4 && data4.slips && typeof data4.slips === 'object' ? data4.slips : {};
+      updateBetslipPerformance(data4 && data4.betslip_performance);
+      const performanceTab = document.getElementById('tab-performance');
+      if (performanceTab) performanceTab.hidden = activeSlipDataset !== 'real';
+      const simulationReport = data4 && data4.simulation_report && typeof data4.simulation_report === 'object'
+        ? data4.simulation_report : {};
+      const reportNode = document.getElementById('betslip-simulation-report');
+      if (reportNode) {
+        const showReport = activeSlipDataset === 'simulated';
+        reportNode.hidden = !showReport;
+        if (showReport) {
+          const parts = [];
+            const expectedSimulation = Number(simulationReport.version) === Number(data4.simulation_version) &&
+              simulationReport.mode === 'chronological_holdout_80_20';
+            if (!expectedSimulation) {
+              parts.push('Waiting for the updater to build the chronological 80/20 historical holdout.');
+            } else {
+              const trainCount = Number(simulationReport.train_matches) || 0;
+              const evaluationCount = Number(simulationReport.evaluation_matches) || 0;
+              const predictedCount = Number(simulationReport.holdout_predictions) || 0;
+              const accuracy = simulationReport.holdout_accuracy == null
+                ? Number.NaN : Number(simulationReport.holdout_accuracy);
+              const coverage = simulationReport.holdout_coverage == null
+                ? Number.NaN : Number(simulationReport.holdout_coverage);
+              const won = Number(simulationReport.simulated_won_slips) || 0;
+              const lost = Number(simulationReport.simulated_lost_slips) || 0;
+              const modelName = String(simulationReport.model_name || 'Current picker model');
+              const actualTrainFraction = Number(simulationReport.train_fraction_actual);
+              parts.push(`${modelName}: trained on ${trainCount} earlier settled matches${Number.isFinite(actualTrainFraction) ? ` (${(actualTrainFraction * 100).toFixed(1)}%)` : ''}; evaluated on ${evaluationCount} later held-out matches.`);
+              parts.push(predictedCount
+                ? `${predictedCount} holdout picks · ${Number.isFinite(accuracy) ? `${accuracy.toFixed(1)}% accuracy` : 'accuracy unavailable'} · ${Number.isFinite(coverage) ? `${coverage.toFixed(1)}% coverage` : 'coverage unavailable'}.`
+                : 'The model abstained on the held-out matches or did not have enough compatible features.');
+              const outcomeStats = simulationReport.per_outcome || {};
+              const outcomeLabels = [['teamAwin', 'Home'], ['draw', 'Draw'], ['teamBwin', 'Away']];
+              const outcomeSummary = outcomeLabels.map(([key, label]) => {
+                const row = outcomeStats[key] || {};
+                return `${label} ${Number(row.correct) || 0}/${Number(row.predicted) || 0}`;
+              }).join(' · ');
+              parts.push(`Correct picks by predicted outcome: ${outcomeSummary}.`);
+              parts.push(`${Object.keys(matches).length} fully settled, same-date three-match slips · ${won} won · ${lost} lost.`);
+              const comboTraining = simulationReport.combination_selector_training || {};
+              const possibleCombos = Number(comboTraining.possible_training_combinations) || 0;
+              const sampledCombos = Number(comboTraining.synthetic_same_date_combinations) || 0;
+              const sampleFraction = Number(comboTraining.training_sample_fraction);
+              if (possibleCombos > 0) {
+                const sampleText = Number.isFinite(sampleFraction)
+                  ? ` (${(sampleFraction * 100).toFixed(1)}% sampled)` : '';
+                parts.push(`Combination challenger learned from ${sampledCombos.toLocaleString()} of ${possibleCombos.toLocaleString()} possible training triples${sampleText}.`);
+              }
+              const comparison = simulationReport.holdout_selector_comparison || {};
+              if (Number.isFinite(Number(comparison.baseline_slips)) && Number(comparison.baseline_slips) > 0) {
+                const baselineRate = Number(comparison.baseline_win_rate);
+                const comboRate = Number(comparison.combination_win_rate);
+                const baselineText = Number.isFinite(baselineRate) ? `${baselineRate.toFixed(1)}%` : 'n/a';
+                const comboText = Number.isFinite(comboRate) ? `${comboRate.toFixed(1)}%` : 'n/a';
+                parts.push(`Same holdout comparison: current selector ${baselineText} (${Number(comparison.baseline_wins) || 0}/${Number(comparison.baseline_slips) || 0}); combination challenger ${comboText} (${Number(comparison.combination_wins) || 0}/${Number(comparison.combination_slips) || 0}).`);
+              }
+              const validation = simulationReport.combination_selector_validation || {};
+              if (validation.reason) {
+                parts.push(`Selector decision: ${simulationReport.selected_slip_selector || 'current picker'}; ${validation.reason}`);
+              }
+              const selectorState = simulationReport.slip_selector_state || {};
+              const promotionReview = selectorState.promotion_review || {};
+              if (selectorState.incumbent_selector) {
+                parts.push(`Current slip-selection incumbent: ${selectorState.incumbent_selector}.`);
+              }
+              if (promotionReview.latest_settled_date) {
+                parts.push(promotionReview.promoted
+                  ? `Promotion review on ${promotionReview.latest_settled_date}: ${promotionReview.incumbent_after_review} replaced ${promotionReview.previous_incumbent}.`
+                  : `Promotion review on ${promotionReview.latest_settled_date}: the incumbent retained selection.`);
+              }
+              parts.push('Historical bookmaker odds were not stored, so payout and profit are not estimated.');
+              if (simulationReport.generation_status) parts.push(String(simulationReport.generation_status));
+            }
+          reportNode.textContent = parts.join(' ');
+        }
+      }
+      document.querySelectorAll('[data-slip-dataset]').forEach(button => {
+        const active = button.dataset.slipDataset === activeSlipDataset;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      const performanceStake = Number(data4 && data4.betslip_performance && data4.betslip_performance.stake);
+      const stake = Number.isFinite(performanceStake) && performanceStake > 0 ? performanceStake : 1;
+      const slipsByCategory = { pending: [], unresolved: [], won: [], lost: [], completed: [], performance: [] };
       const allSlips = [];
 
       function toISODate(value) {
@@ -642,39 +1132,73 @@ function product4() {
         return `${day}-${month}-${year}`;
       }
 
+      function normalizeLiveClock(value) {
+        if (value == null || value === '') return '';
+        const text = String(value).trim().replace(/\s+/g, ' ');
+        if (/^(?:ht|htlive|half[- ]?time|halftime|interval|1h|2h)$/i.test(text)) {
+          return /^(?:1h|2h)$/i.test(text) ? text.toUpperCase() : 'HT';
+        }
+        const match = text.match(/^(?:(?:live|in play)\s*[:\-]?\s*)?(\d{1,3})(?:\s*\+\s*(\d{1,2}))?\s*(?:['′’]|m|min(?:ute)?s?)?(?:\s*(?:live|in play))?$/i);
+        if (!match) return '';
+        const minute = Number(match[1]);
+        const added = match[2] ? Number(match[2]) : null;
+        if (minute > 130 || (added != null && added > 30)) return '';
+        return `${minute}${added == null ? '' : `+${added}`}'`;
+      }
+
+      const endedLegStates = new Set(['match ended', 'ended', 'finished', 'full time', 'ft']);
+      function verifiedLegOutcome(leg) {
+        const actual = String(leg && leg.actual || '').trim().toLocaleLowerCase();
+        const state = String(leg && leg.state || '').trim().toLocaleLowerCase();
+        const resultStatus = String(leg && leg.result_status || '').trim().toLocaleLowerCase();
+        const verified = resultStatus === 'verified' || endedLegStates.has(state);
+        return verified && (actual === 'correct' || actual === 'incorrect') ? actual : '';
+      }
+
+      function legNeedsResultRecovery(leg, outcome) {
+        const state = String(leg && leg.state || '').trim().toLocaleLowerCase();
+        const resultStatus = String(leg && leg.result_status || '').trim().toLocaleLowerCase();
+        return resultStatus === 'unavailable' || state === 'result unavailable' ||
+          (resultStatus === 'verified' && !outcome) ||
+          (endedLegStates.has(state) && !outcome);
+      }
+
       Object.entries(matches).forEach(([slipId, slipMatches], idx) => {
         if (!slipMatches || typeof slipMatches !== 'object') return;
         const legs = Object.values(slipMatches).filter(leg => leg && typeof leg === 'object');
-        let anyPending = false;
-        let anyUnresolved = false;
-        let anyIncorrect = false;
-        let allCorrect = legs.length > 0;
-        legs.forEach(leg => {
-          if (leg.result_status === 'unavailable' || leg.state === 'Result Unavailable') {
-            anyUnresolved = true;
-            allCorrect = false;
-          } else if (leg.state !== 'Match Ended') {
-            anyPending = true;
-            allCorrect = false;
-          } else if (leg.actual === 'incorrect') {
-            anyIncorrect = true;
-            allCorrect = false;
-          } else if (leg.actual !== 'correct') {
-            allCorrect = false;
-          }
-        });
-        const slipState = anyUnresolved ? 'unresolved' : anyPending ? 'pending' : anyIncorrect ? 'lost' : allCorrect ? 'won' : 'complete';
-        const settledCount = legs.filter(leg => leg.state === 'Match Ended' &&
-          (leg.actual === 'correct' || leg.actual === 'incorrect' || Boolean(String(leg.actual_result || '').trim()))).length;
+        if (!legs.length) return;
+        if (activeSlipDataset === 'simulated' && legs.some(leg => {
+          const state = String(leg.state || '').trim().toLowerCase();
+          const resultStatus = String(leg.result_status || '').trim().toLowerCase();
+          const actual = String(leg.actual || '').trim().toLowerCase();
+          return state !== 'match ended' || resultStatus !== 'verified' ||
+            !['correct', 'incorrect'].includes(actual) ||
+            leg.simulation_data?.evaluation !== 'chronological_holdout';
+        })) return;
+        const outcomes = legs.map(verifiedLegOutcome);
+        const settledCount = outcomes.filter(Boolean).length;
+        const allLegsSettled = settledCount === legs.length;
+        const anyIncorrect = outcomes.includes('incorrect');
+        const allCorrect = allLegsSettled && outcomes.every(outcome => outcome === 'correct');
+        const anyUnresolved = legs.some((leg, index) => legNeedsResultRecovery(leg, outcomes[index]));
+        // A verified losing leg settles an accumulator immediately. The slip
+        // stays in Lost, while Completed is reserved for slips whose every leg
+        // has a verified final outcome.
+        const slipState = anyIncorrect ? 'lost' : allCorrect ? 'won' : anyUnresolved ? 'unresolved' : 'pending';
+        const slipEstimate = legs.map(leg => Number(leg.simulation_data?.estimated_slip_win_probability))
+          .find(value => Number.isFinite(value) && value >= 0 && value <= 100);
         const liveCount = legs.filter(leg => {
           if (leg.state !== 'pending' || leg.result_status === 'unavailable') return false;
+          if (/susp(?:ended)?|interrupted|abandon(?:ed|ment)?/i.test(`${leg.fixture_status || ''} ${leg.time || ''}`)) return false;
           const score = String(leg.score || '').trim();
           return score !== '' && score.toLocaleLowerCase() !== 'none' && /^\d{1,2}\s*[-–]\s*\d{1,2}$/.test(score);
         }).length;
-        const matchDates = [...new Set(legs.map(leg => toISODate(leg.date)).filter(Boolean))].sort();
+        const matchDates = [...new Set(legs.map(leg => toISODate(leg.rescheduled_date || leg.date)).filter(Boolean))].sort();
         const item = {
           slipId: String(slipId), slipMatches, idx, slipState,
-          legCount: legs.length, settledCount, liveCount, matchDates,
+          dataset: activeSlipDataset,
+          legCount: legs.length, settledCount, liveCount, matchDates, allLegsSettled,
+          estimatedWinProbability: slipEstimate,
           latestMatchDate: matchDates[matchDates.length - 1] || '',
           matchDateLabel: matchDates.length > 1
             ? `${displayDate(matchDates[0])} – ${displayDate(matchDates[matchDates.length - 1])}`
@@ -683,13 +1207,13 @@ function product4() {
         allSlips.push(item);
         const category = slipState === 'unresolved' ? 'unresolved' : slipState === 'pending' ? 'pending' : slipState === 'won' ? 'won' : slipState === 'lost' ? 'lost' : 'completed';
         slipsByCategory[category].push(item);
-        if (category === 'won' || category === 'lost') slipsByCategory.completed.push(item);
+        if (allLegsSettled) slipsByCategory.completed.push(item);
       });
 
       localStorage.setItem('matchSummary4', JSON.stringify({ slipsByCategory, stake }));
       storeInfo('late4', 'done');
 
-      const pageKey = 'betslipPages';
+      const pageKey = activeSlipDataset === 'simulated' ? 'betslipPagesSimulated' : 'betslipPagesReal';
       let pages = {};
       try { pages = JSON.parse(localStorage.getItem(pageKey) || '{}') || {}; } catch (_) { pages = {}; }
       const filterKey = 'betslipFilters';
@@ -712,8 +1236,15 @@ function product4() {
           ? savedFilters.sort : 'newest';
         sortSelect.dataset.initialized = 'true';
       }
-      let activeCategory = accessInfo('activeSlipCategory') || 'pending';
-      if (!slipsByCategory[activeCategory]) activeCategory = 'pending';
+      const categoryStorageKey = activeSlipDataset === 'simulated'
+        ? 'activeSlipCategorySimulated' : 'activeSlipCategory';
+      let activeCategory = accessInfo(categoryStorageKey) ||
+        (activeSlipDataset === 'simulated' ? 'completed' : 'pending');
+      if (activeSlipDataset === 'simulated' && !['won', 'lost', 'completed'].includes(activeCategory)) {
+        activeCategory = 'completed';
+      }
+      if (!slipsByCategory[activeCategory]) activeCategory = activeSlipDataset === 'simulated' ? 'completed' : 'pending';
+      if (activeSlipDataset !== 'real' && activeCategory === 'performance') activeCategory = 'completed';
 
       function stateStyle(state) {
         return state === 'won' ? 'glass slip-state-won' :
@@ -736,7 +1267,8 @@ function product4() {
             </div>
           </div>
           <p class="mt-1 text-xs">Prediction: <span class="font-medium" data-role="prediction"></span></p>
-          <p class="mt-1 text-xs">Odds: <span class="font-semibold text-blue-700" data-role="odds"></span></p>
+          <p class="betslip-simulation-estimate" data-role="simulation-estimate" hidden></p>
+          <p class="mt-1 text-xs" data-role="odds-wrap">Odds: <span class="font-semibold text-blue-700" data-role="odds"></span></p>
           <div class="mt-1 text-xs font-semibold" data-role="score-wrap"><span data-role="score-label">Score:</span> <span class="inline-block px-2 py-0.5 rounded bg-gray-200" data-role="score"></span></div>
           <div class="mt-1 text-xs font-semibold" data-role="actual-wrap">Actual Result: <span class="inline-block px-2 py-0.5 rounded bg-blue-200" data-role="actual-result"></span></div>`;
         patchLeg(leg, data);
@@ -748,24 +1280,69 @@ function product4() {
         const matchName = data.match || '';
         if (role('match').textContent !== matchName) role('match').textContent = matchName;
         if (role('prediction').textContent !== (data.prediction_ || '')) role('prediction').textContent = data.prediction_ || '';
+        const simulationEstimate = role('simulation-estimate');
+        const simulationData = data.simulation_data && typeof data.simulation_data === 'object' ? data.simulation_data : {};
+        const estimatedAccuracy = Number(simulationData.estimated_leg_accuracy);
+        const competitionEvidence = Number(simulationData.training_evidence?.categories?.competition?.sample_size);
+        simulationEstimate.hidden = !simulationData.estimated_leg_accuracy;
+        simulationEstimate.textContent = Number.isFinite(estimatedAccuracy)
+          ? `Historical selector estimate: ${estimatedAccuracy.toFixed(1)}%${competitionEvidence > 0 ? ` · competition sample ${competitionEvidence}` : ''}`
+          : '';
         const oddsText = data.odds == null ? '' : String(data.odds);
         if (role('odds').textContent !== oddsText) role('odds').textContent = oddsText;
+        const oddsValue = Number(data.odds);
+        const historicalHoldout = data.simulation_data?.evaluation === 'chronological_holdout';
+        role('odds-wrap').hidden = historicalHoldout || !Number.isFinite(oddsValue) || oddsValue <= 0;
         const ended = data.state === 'Match Ended';
         const unavailable = data.result_status === 'unavailable' || data.state === 'Result Unavailable';
-        const live = !ended && !unavailable && data.state === 'pending' && data.score && data.score !== 'none';
+        const postponed = /postponed|postponement/i.test(`${data.fixture_status || ''} ${data.time || ''}`);
+        const suspended = /susp(?:ended)?|interrupted/i.test(`${data.fixture_status || ''} ${data.time || ''}`);
+        const abandoned = /abandon(?:ed|ment)?/i.test(`${data.fixture_status || ''} ${data.time || ''}`);
+        const hasScore = Boolean(data.score && data.score !== 'none');
+        const normalizedState = String(data.state || '').trim().toLowerCase();
+        const normalizedFixtureStatus = String(data.fixture_status || '').trim().toLowerCase();
+        const explicitLiveState = ['live', 'htlive', 'half time', 'in play'].includes(normalizedState) ||
+          ['live', 'htlive', 'in play'].includes(normalizedFixtureStatus);
+        const live = !ended && !unavailable && !postponed && !suspended && !abandoned &&
+          (explicitLiveState || (normalizedState === 'pending' && (normalizedFixtureStatus === 'live' || hasScore)));
         const time = role('time');
-        const timeText = ended || unavailable ? '' : (data.time && data.time !== 'none' ? String(data.time) : '');
+        const rescheduledDate = data.rescheduled_date ? String(data.rescheduled_date) : '';
+        const rawTime = String(data.time || '').trim();
+        const genericLiveTime = /^(?:live|in play|clock unavailable|none|null)$/i.test(rawTime);
+        const clockCandidates = [
+          rawTime,
+          data.last_live_time,
+          data.live_time,
+          data.match_clock,
+          data.match_time,
+          data.elapsed,
+          data.elapsed_minute,
+          data.minute,
+        ];
+        let liveClock = clockCandidates.map(normalizeLiveClock).find(Boolean) || '';
+        const scoreParts = String(data.score || '').match(/^(\d{1,2})\s*[-–]\s*(\d{1,2})$/);
+        if (liveClock === "0'" && scoreParts && Number(scoreParts[1]) + Number(scoreParts[2]) > 0) {
+          liveClock = clockCandidates.slice(1).map(normalizeLiveClock).find(clock => clock && clock !== "0'") || '';
+        }
+        const liveClockText = genericLiveTime || !rawTime
+          ? (liveClock || 'Clock unavailable')
+          : (normalizeLiveClock(rawTime) || rawTime);
+        const timeText = ended || unavailable ? '' : postponed && rescheduledDate
+          ? `Rescheduled: ${rescheduledDate}`
+          : live ? liveClockText : (rawTime && rawTime !== 'none' ? rawTime : '');
         if (time.textContent !== timeText) time.textContent = timeText;
         const timeClass = live ? 'text-xs text-blue-500 font-bold' : 'text-xs text-gray-500';
         if (time.className !== timeClass) time.className = timeClass;
         const status = role('status');
-        const statusText = unavailable ? 'RESULT UNAVAILABLE' : ended ? 'Match Ended' : live ? 'LIVE' : '';
+        const statusText = unavailable ? 'RESULT UNAVAILABLE' : ended ? 'Match Ended' : postponed ? 'POSTPONED' : abandoned ? 'ABANDONED' : suspended ? 'SUSPENDED' : live ? 'LIVE' : '';
         if (status.textContent !== statusText) status.textContent = statusText;
-        const statusClass = `match-status ${unavailable ? 'unavailable' : ended ? (data.actual === 'correct' ? 'won' : data.actual === 'incorrect' ? 'lost' : '') : live ? 'live' : ''}`;
+        const statusClass = `match-status ${unavailable ? 'unavailable' : ended ? (data.actual === 'correct' ? 'won' : data.actual === 'incorrect' ? 'lost' : '') : postponed ? 'postponed' : (suspended || abandoned) ? 'suspended' : live ? 'live' : ''}`;
         if (status.className !== statusClass) status.className = statusClass;
         leg.classList.toggle('won', ended && data.actual === 'correct');
         leg.classList.toggle('lost', ended && data.actual !== 'correct');
         leg.classList.toggle('live', live);
+        leg.classList.toggle('postponed', postponed);
+        leg.classList.toggle('suspended', suspended || abandoned);
         leg.classList.toggle('unavailable', unavailable);
         const scoreWrap = role('score-wrap');
         scoreWrap.hidden = !data.score || data.score === 'none';
@@ -783,10 +1360,12 @@ function product4() {
         const card = document.createElement('article');
         card.className = `slip-card ${stateStyle(item.slipState)} flex flex-col gap-1`;
         card.dataset.slipId = item.slipId;
+        card.dataset.slipDataset = item.dataset;
+        card.dataset.slipKey = `${item.dataset}:${item.slipId}`;
         const header = document.createElement('div');
         header.className = 'slip-header';
         const icon = item.slipState === 'won' ? '🏆' : item.slipState === 'lost' ? '❌' : item.slipState === 'pending' ? '⏳' : item.slipState === 'unresolved' ? '⚠️' : '📝';
-        const headerText = `${icon} Betslip #${item.slipId}`;
+        const headerText = `${icon} ${item.dataset === 'simulated' ? 'Simulated betslip' : 'Betslip'} #${item.slipId}`;
         if (header.textContent !== headerText) header.textContent = headerText;
         card.appendChild(header);
         const legsHolder = document.createElement('div');
@@ -800,9 +1379,9 @@ function product4() {
         summary.className = 'slip-summary';
         summary.dataset.role = 'summary';
         summary.innerHTML = `
-          <div class="flex justify-between"><span>Stake</span><span data-role="stake"></span></div>
-          <div class="flex justify-between"><span>Total Odds</span><span data-role="total-odds"></span></div>
-          <div class="flex justify-between font-semibold text-base mt-1"><span>Potential Win</span><span data-role="potential-win"></span></div>
+          <div class="flex justify-between" data-role="stake-row"><span>Stake</span><span data-role="stake"></span></div>
+          <div class="flex justify-between" data-role="odds-row"><span>Total Odds</span><span data-role="total-odds"></span></div>
+          <div class="flex justify-between font-semibold text-base mt-1" data-role="potential-row"><span>Potential Win</span><span data-role="potential-win"></span></div>
           <div class="slip-state" data-role="slip-state"></div>`;
         card.appendChild(summary);
         patchSlipCard(card, item, stake);
@@ -816,7 +1395,7 @@ function product4() {
         }
         const header = card.querySelector('.slip-header');
         const icon = item.slipState === 'won' ? '🏆' : item.slipState === 'lost' ? '❌' : item.slipState === 'pending' ? '⏳' : item.slipState === 'unresolved' ? '⚠️' : '📝';
-        const headerText = `${icon} Betslip #${item.slipId}`;
+        const headerText = `${icon} ${item.dataset === 'simulated' ? 'Simulated betslip' : 'Betslip'} #${item.slipId}`;
         if (header.textContent !== headerText) header.textContent = headerText;
         const holder = card.querySelector('[data-role="legs"]');
         const rows = Object.entries(item.slipMatches || {});
@@ -833,20 +1412,39 @@ function product4() {
         while (holder.children.length > rows.length) holder.lastElementChild.remove();
 
         const metrics = card.querySelector('[data-role="slip-metrics"]');
-        const metricsText = `${item.legCount} matches · ${item.settledCount} outcomes · ${item.liveCount} live · ${item.matchDateLabel}`;
+        const historicalHoldout = item.dataset === 'simulated' && rows.some(([, data]) =>
+          data && data.simulation_data?.evaluation === 'chronological_holdout');
+        const estimateText = !historicalHoldout && item.dataset === 'simulated' && Number.isFinite(item.estimatedWinProbability)
+          ? ` · estimated slip win ${item.estimatedWinProbability.toFixed(1)}%` : '';
+        const metricsText = historicalHoldout
+          ? `${item.legCount} matches · ${item.settledCount} settled outcomes · historical holdout · ${item.matchDateLabel}`
+          : `${item.legCount} matches · ${item.settledCount} outcomes · ${item.liveCount} live · ${item.matchDateLabel}${estimateText}`;
         if (metrics && metrics.textContent !== metricsText) metrics.textContent = metricsText;
 
         let totalOdds = 1;
+        let allLegOddsAvailable = true;
         rows.forEach(([, data]) => {
           const odds = Number(data.odds);
           if (Number.isFinite(odds) && odds > 0) totalOdds *= odds;
+          else allLegOddsAvailable = false;
         });
         const summary = card.querySelector('[data-role="summary"]');
-        const stateLabel = item.slipState === 'won' ? 'SLIP WON' : item.slipState === 'lost' ? 'SLIP LOST' : item.slipState === 'pending' ? 'SLIP PENDING' : item.slipState === 'unresolved' ? 'RESULT DATA MISSING' : '';
+        const showFinancialSummary = !historicalHoldout && allLegOddsAvailable;
+        ['stake-row', 'odds-row', 'potential-row'].forEach(name => {
+          const node = summary.querySelector(`[data-role="${name}"]`);
+          if (node) node.hidden = !showFinancialSummary;
+        });
+        const unsettledLegs = Math.max(0, item.legCount - item.settledCount);
+        const stateLabel = item.slipState === 'won' ? 'SLIP WON' :
+          item.slipState === 'lost' ? (unsettledLegs
+            ? `SLIP LOST · ${unsettledLegs} LEG${unsettledLegs === 1 ? '' : 'S'} UNSETTLED`
+            : 'SLIP LOST') :
+          item.slipState === 'pending' ? 'SLIP PENDING' :
+          item.slipState === 'unresolved' ? 'RESULT DATA MISSING' : '';
         const summaryValues = {
           stake: `R${currentStake}`,
-          'total-odds': totalOdds.toFixed(2),
-          'potential-win': `R${(currentStake * totalOdds).toFixed(2)}`,
+          'total-odds': showFinancialSummary ? totalOdds.toFixed(2) : 'Unavailable',
+          'potential-win': showFinancialSummary ? `R${(currentStake * totalOdds).toFixed(2)}` : 'Unavailable',
           'slip-state': stateLabel
         };
         Object.entries(summaryValues).forEach(([name, value]) => {
@@ -889,13 +1487,26 @@ function product4() {
       }
 
       function renderSlips(category, highlightSlipId = null) {
+        const performanceMode = category === 'performance' && activeSlipDataset === 'real';
+        const performancePanel = document.getElementById('betslip-performance');
+        if (performancePanel) performancePanel.hidden = !performanceMode;
+        document.querySelectorAll('[data-slip-status-tab]').forEach(node => {
+          node.hidden = performanceMode;
+        });
+        const backToSlips = document.getElementById('tab-back-to-slips');
+        if (backToSlips) backToSlips.hidden = !performanceMode;
+        document.querySelectorAll('[data-betslip-view-control]').forEach(node => {
+          node.hidden = performanceMode;
+        });
+        container.hidden = performanceMode;
+        if (performanceMode) return;
         const { list, invalidRange, allInCategory } = getFilteredSortedList(category);
         const maxPage = Math.max(0, Math.ceil(list.length / pageSize) - 1);
         const page = Math.max(0, Math.min(Number(pages[category]) || 0, maxPage));
         pages[category] = page;
         localStorage.setItem(pageKey, JSON.stringify(pages));
         const visible = list.slice(page * pageSize, (page + 1) * pageSize);
-        const existing = new Map(Array.from(container.querySelectorAll('.slip-card[data-slip-id]')).map(card => [card.dataset.slipId, card]));
+        const existing = new Map(Array.from(container.querySelectorAll('.slip-card[data-slip-id]')).map(card => [card.dataset.slipKey || `${card.dataset.slipDataset || 'real'}:${card.dataset.slipId}`, card]));
         if (!list.length) {
           Array.from(container.querySelectorAll('.slip-card[data-slip-id]')).forEach(card => card.remove());
           let empty = container.querySelector('[data-role="empty-slips"]');
@@ -912,15 +1523,16 @@ function product4() {
           const empty = container.querySelector('[data-role="empty-slips"]');
           if (empty) empty.remove();
           visible.forEach((item, index) => {
-            let card = existing.get(item.slipId);
+            let card = existing.get(`${item.dataset}:${item.slipId}`);
             if (!card) card = createSlipCard(item);
             patchSlipCard(card, item, stake);
             const atPosition = container.children[index];
             if (atPosition !== card) container.insertBefore(card, atPosition || null);
           });
-          const visibleIds = new Set(visible.map(item => item.slipId));
+          const visibleIds = new Set(visible.map(item => `${item.dataset}:${item.slipId}`));
           Array.from(container.querySelectorAll('.slip-card[data-slip-id]')).forEach(card => {
-            if (!visibleIds.has(card.dataset.slipId)) card.remove();
+            const cardKey = card.dataset.slipKey || `${card.dataset.slipDataset || 'real'}:${card.dataset.slipId}`;
+            if (!visibleIds.has(cardKey)) card.remove();
           });
         }
         const status = document.getElementById('betslip-page-status');
@@ -930,7 +1542,7 @@ function product4() {
         if (prev) prev.disabled = page <= 0;
         if (next) next.disabled = page >= maxPage;
         if (highlightSlipId) {
-          const target = Array.from(container.querySelectorAll('.slip-card')).find(card => card.dataset.slipId === String(highlightSlipId));
+           const target = Array.from(container.querySelectorAll('.slip-card')).find(card => card.dataset.slipKey === `${activeSlipDataset}:${highlightSlipId}`);
           if (target) {
             target.classList.remove('betslip-search-highlight');
             void target.offsetWidth;
@@ -940,22 +1552,38 @@ function product4() {
         }
       }
 
-      const tabs = { pending: 'tab-pending', unresolved: 'tab-unresolved', won: 'tab-won', lost: 'tab-lost', completed: 'tab-completed' };
+      const tabs = { pending: 'tab-pending', unresolved: 'tab-unresolved', won: 'tab-won', lost: 'tab-lost', completed: 'tab-completed', performance: 'tab-performance' };
       const unresolvedCount = document.querySelector('#tab-unresolved .tab-count');
       if (unresolvedCount) unresolvedCount.textContent = String(slipsByCategory.unresolved.length);
       function selectCategory(category) {
         if (!slipsByCategory[category]) return;
+        if (activeSlipDataset === 'simulated' && !['won', 'lost', 'completed'].includes(category)) return;
         activeCategory = category;
-        storeInfo('activeSlipCategory', category);
+        storeInfo(categoryStorageKey, category);
         Object.entries(tabs).forEach(([name, id]) => {
           const button = document.getElementById(id);
-          if (button) button.classList.toggle('active', name === category);
+          if (button) {
+            button.hidden = activeSlipDataset === 'simulated' && ['pending', 'unresolved', 'performance'].includes(name);
+            button.classList.toggle('active', name === category);
+            button.setAttribute('aria-selected', name === category ? 'true' : 'false');
+          }
         });
         renderSlips(category);
       }
       Object.entries(tabs).forEach(([category, id]) => {
         const button = document.getElementById(id);
         if (button) button.onclick = () => selectCategory(category);
+      });
+      const backToSlips = document.getElementById('tab-back-to-slips');
+      if (backToSlips) backToSlips.onclick = () => selectCategory('pending');
+
+      document.querySelectorAll('[data-slip-dataset]').forEach(button => {
+        button.onclick = () => {
+          const nextDataset = button.dataset.slipDataset === 'simulated' ? 'simulated' : 'real';
+          window.activeBetslipDataset = nextDataset;
+          if (liveSlipsFetchBusy) window._betslipRefreshQueued = true;
+          else product4();
+        };
       });
 
       const prev = document.getElementById('betslip-prev');
@@ -996,8 +1624,10 @@ function product4() {
         if (dateFrom) dateFrom.value = '';
         if (dateTo) dateTo.value = '';
         localStorage.setItem(filterKey, JSON.stringify({ from: '', to: '', sort: sortSelect ? sortSelect.value : 'newest' }));
-        let category = Object.keys(slipsByCategory).find(name => slipsByCategory[name].some(item => item.slipId === found.slipId)) || 'pending';
-        if (category === 'completed') category = found.slipState === 'won' || found.slipState === 'lost' ? found.slipState : 'completed';
+        const activeCategoryHasSlip = Array.isArray(slipsByCategory[activeCategory]) &&
+          slipsByCategory[activeCategory].some(item => item.slipId === found.slipId);
+        const category = activeCategoryHasSlip ? activeCategory :
+          Object.keys(slipsByCategory).find(name => slipsByCategory[name].some(item => item.slipId === found.slipId)) || 'pending';
         const list = getFilteredSortedList(category).list;
         const index = list.findIndex(item => item.slipId === found.slipId);
         pages[category] = Math.floor(Math.max(0, index) / pageSize);
@@ -1017,7 +1647,13 @@ function product4() {
       console.error('Betslip refresh failed:', error);
       storeInfo('late4', 'failed');
     })
-    .finally(() => { liveSlipsFetchBusy = false; });
+    .finally(() => {
+      liveSlipsFetchBusy = false;
+      if (window._betslipRefreshQueued) {
+        window._betslipRefreshQueued = false;
+        window.setTimeout(product4, 0);
+      }
+    });
 }
 
 function countCardsInTabMarkup(markup) {
@@ -2101,7 +2737,11 @@ function syncMatchCards(markup) {
     if (!hasCards && !holder.querySelector('.empty-match-state')) {
       const empty = document.createElement('div');
       empty.className = 'empty-match-state text-center text-slate-500 py-12';
-      empty.textContent = state === 'live' ? 'No live matches right now.' : state === 'upcoming' ? 'No upcoming matches right now.' : 'No ended matches available.';
+      empty.textContent = state === 'live'
+        ? 'No live matches with a prediction right now.'
+        : state === 'upcoming'
+          ? 'No upcoming matches with a prediction right now.'
+          : 'No ended matches with a prediction to show.';
       holder.appendChild(empty);
     } else if (hasCards) holder.querySelectorAll('.empty-match-state').forEach(node => node.remove());
   });
@@ -2154,8 +2794,9 @@ function initMatchSearch() {
 
 function normalizeMatchState(value) {
   const state = String(value || '').trim().toLocaleLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
-  if (/^(?:\d{1,3}\s*(?:['′]|min(?:ute)?s?)\s*)?(?:live|in progress|in play|playing|1h|2h|ht|half time|halftime|extra time|penalties|suspended)\b/.test(state)) return 'live';
-  if (/^(?:upcoming|scheduled|not started|fixture|pre match|prematch|postponed)\b/.test(state)) return 'upcoming';
+  if (/^(?:susp(?:ended)?|interrupted|abandon(?:ed|ment)?)\b/.test(state)) return 'upcoming';
+  if (/^(?:\d{1,3}\s*(?:['′]|min(?:ute)?s?)\s*)?(?:live|in progress|in play|playing|1h|2h|ht|half time|halftime|extra time|penalties)\b/.test(state)) return 'live';
+  if (/^(?:upcoming|scheduled|not started|fixture|pre match|prematch|postponed|susp(?:ended)?|interrupted|abandon(?:ed|ment)?)\b/.test(state)) return 'upcoming';
   if (/^(?:ended|match ended|finished|full time|fulltime|ft|aet|after extra time|final)\b/.test(state)) return 'ended';
   return '';
 }
@@ -2191,6 +2832,10 @@ function setLiveUpdateStatus(message, state = 'updated') {
 function getproducts2(silent = false) {
   if (liveMatchesFetchBusy) return Promise.resolve(false);
   liveMatchesFetchBusy = true;
+  const liveRequestController = typeof AbortController === 'function' ? new AbortController() : null;
+  const liveRequestTimeout = liveRequestController
+    ? setTimeout(() => liveRequestController.abort(), 15000)
+    : null;
   if (!silent) storeInfo('late', 'busy')
   let loader888=document.querySelector('.loader88')
   if (loader888 && !silent){
@@ -2207,7 +2852,8 @@ function getproducts2(silent = false) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ message: 'Logged' }),
-    cache: 'no-store'
+    cache: 'no-store',
+    ...(liveRequestController ? { signal: liveRequestController.signal } : {})
   })
     .then(response => {
       if (!response.ok) throw new Error(`Live data request failed (${response.status})`);
@@ -2258,10 +2904,25 @@ function getproducts2(silent = false) {
         : 'unavailable';
       if (hasSourceTimestamp) storeInfo('live_updated_at', sourceUpdatedAt);
       if (snapshotFresh) {
-        setLiveUpdateStatus(`Live data refreshed ${refreshedAt}`, 'updated');
-      } else {
         setLiveUpdateStatus(
-          `Live data delayed; stale live/upcoming matches hidden. Last successful source refresh ${refreshedAt}.`,
+          `Live data refreshed ${refreshedAt} · only matches with an available prediction are shown and counted.`,
+          'updated'
+        );
+      } else {
+        const verifiedFallbackCount = Number(data.verified_fallback_count || 0);
+        const lastAttemptAt = Number(data.last_source_attempt_at);
+        const lastAttemptTime = Number.isFinite(lastAttemptAt) && lastAttemptAt > 0
+          ? new Date(lastAttemptAt * 1000).toLocaleTimeString([], {
+              hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            })
+          : '';
+        const lastAttemptResult = data.last_source_attempt_ok === true
+          ? (lastAttemptTime ? `The latest source poll succeeded at ${lastAttemptTime}, but the dashboard snapshot has not published yet.` : 'The latest source poll succeeded, but the dashboard snapshot has not published yet.')
+          : data.last_source_attempt_ok === false
+            ? `The latest source poll${lastAttemptTime ? ` at ${lastAttemptTime}` : ''} failed${data.last_source_attempt_error ? `: ${data.last_source_attempt_error}` : '.'}`
+            : '';
+        setLiveUpdateStatus(
+          `Live data delayed; ${verifiedFallbackCount ? `${verifiedFallbackCount} cross-checked fallback match${verifiedFallbackCount === 1 ? '' : 'es'} shown; ` : ''}other stale active matches hidden. The match tabs count only fixtures with a prediction. Last successful source refresh ${refreshedAt}.${lastAttemptResult ? ` ${lastAttemptResult}` : ''}`,
           'delayed'
         );
       }
@@ -2288,8 +2949,9 @@ function getproducts2(silent = false) {
             <div class="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap mb-2">
               <!-- Match Status Component Placeholder -->
               <div class="text-sm font-semibold">
-                <div style='gap:10px; ' class="flex   text-right">
+                <div style='gap:10px; ' class="flex flex-wrap items-center text-right">
                   ${cards_data[r].where}
+                  ${matchVerificationBadgeMarkup(cards_data[r])}
                 </div>
               </div>
             </div>
@@ -2343,8 +3005,9 @@ function getproducts2(silent = false) {
             <div class="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap mb-2">
               <!-- Match Status Component Placeholder -->
               <div class="text-sm font-semibold">
-                <div style='gap:10px; ' class="flex   text-right">
+                <div style='gap:10px; ' class="flex flex-wrap items-center text-right">
                   ${cards_data[r].where}
+                  ${matchVerificationBadgeMarkup(cards_data[r])}
                 </div>
               </div>
             </div>
@@ -2398,8 +3061,9 @@ function getproducts2(silent = false) {
             <div class="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap mb-2">
               <!-- Match Status Component Placeholder -->
               <div class="text-sm font-semibold">
-                <div style='gap:10px; ' class="flex   text-right">
+                <div style='gap:10px; ' class="flex flex-wrap items-center text-right">
                   ${cards_data[r].where}
+                  ${matchVerificationBadgeMarkup(cards_data[r])}
                 </div>
               </div>
             </div>
@@ -2557,8 +3221,8 @@ function getproducts2(silent = false) {
   </style>
       <div class="container9">
     <div class="pulse-circle9"></div>
-    <div class="message9 typewriter9">No Data!</div>
-    <div class="fallback-message9">No Data!</div>
+    <div class="message9 typewriter9">No live matches with a prediction right now.</div>
+    <div class="fallback-message9">No live matches with a prediction right now.</div>
   </div>
   <canvas id="particle-canvas9"></canvas>`
             rl = true
@@ -2659,8 +3323,8 @@ function getproducts2(silent = false) {
   </style>
       <div class="container92">
     <div class="pulse-circle92"></div>
-    <div class="message92 typewriter92">No Data!</div>
-    <div class="fallback-message92">No Data!</div>
+    <div class="message92 typewriter92">No upcoming matches with a prediction right now.</div>
+    <div class="fallback-message92">No upcoming matches with a prediction right now.</div>
   </div>
   <canvas id="particle-canvas92"></canvas>`
             rup = true
@@ -2761,8 +3425,8 @@ function getproducts2(silent = false) {
   </style>
       <div class="container93">
     <div class="pulse-circle93"></div>
-    <div class="message93 typewriter93">No Data!</div>
-    <div class="fallback-message93">No Data!</div>
+    <div class="message93 typewriter93">No ended matches with a prediction to show.</div>
+    <div class="fallback-message93">No ended matches with a prediction to show.</div>
   </div>
   <canvas id="particle-canvas93"></canvas>`
             ren = true
@@ -2853,7 +3517,10 @@ function getproducts2(silent = false) {
 
 
     })
-    .finally(() => { liveMatchesFetchBusy = false; });
+    .finally(() => {
+      if (liveRequestTimeout !== null) clearTimeout(liveRequestTimeout);
+      liveMatchesFetchBusy = false;
+    });
 }
 function getproducts2_() {
   storeInfo('late7', 'busy');
@@ -3094,25 +3761,274 @@ function updatecontent() {
 
 function switchPerformanceDataset(dataset) {
   activePerformanceDataset = dataset === 'real' ? 'real' : 'simulated';
+  if (simulationStatusPollTimer) clearTimeout(simulationStatusPollTimer);
+  simulationStatusPollTimer = null;
   extact3_no = 0;
   clearPerformanceView(`Loading ${activePerformanceDataset === 'real' ? 'real-life' : 'simulated'} results…`);
   const simulatedButton = document.getElementById('performance-mode-simulated');
   const realButton = document.getElementById('performance-mode-real');
   const note = document.getElementById('performance-mode-note');
   const totalLabel = document.getElementById('total-matches-label');
+  const cohortControls = document.getElementById('performance-cohorts');
+  const classPanel = document.getElementById('performance-class-panel');
+  if (cohortControls) cohortControls.hidden = activePerformanceDataset !== 'real';
+  if (classPanel) classPanel.hidden = activePerformanceDataset !== 'real';
   if (simulatedButton) simulatedButton.setAttribute('aria-selected', String(activePerformanceDataset === 'simulated'));
   if (realButton) realButton.setAttribute('aria-selected', String(activePerformanceDataset === 'real'));
   if (note) note.textContent = activePerformanceDataset === 'real'
-    ? 'Predictions are saved once; accuracy includes settled matches only.'
-    : 'Historical walk-forward backtest (earlier dates only)';
+    ? 'Predictions are saved once; the selected timing cohort is shown below.'
+    : 'Chronological walk-forward replay, not the current picker holdout. Features and available training history can vary by date; backfilled team profiles are not fully point-in-time snapshots.';
   if (totalLabel) totalLabel.textContent = activePerformanceDataset === 'real'
-    ? 'Predictions Recorded' : 'Total Matches';
+    ? 'Predictions Recorded' : 'Scored predictions';
   getproducts_2_3(true, activePerformanceDataset);
+}
+
+function predictionCohortForStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+  if (normalized === 'upcoming' || normalized === 'pre match' || normalized === 'prematch') return 'pre_match';
+  if (normalized === 'live' || normalized === 'in play' || normalized === 'ht' || normalized === 'half time') return 'live';
+  return 'other';
+}
+
+function predictionHistoryRows(history) {
+  const rows = [];
+  if (!history || typeof history !== 'object' || Array.isArray(history)) return rows;
+  Object.values(history).forEach(category => {
+    if (!category || typeof category !== 'object') return;
+    Object.values(category).forEach(row => {
+      if (row && typeof row === 'object') rows.push(row);
+    });
+  });
+  return rows;
+}
+
+function predictionCohortMetrics(rows) {
+  const settled = rows.filter(row => {
+    const actual = String(row && row['actual results'] || '').trim();
+    return actual && !/^(pending|missing|unknown|n\/a|—|-|none)$/i.test(actual);
+  });
+  const correct = settled.filter(outcomeIsCorrect).length;
+  return {
+    total: rows.length,
+    settled: settled.length,
+    pending: Math.max(0, rows.length - settled.length),
+    correct,
+    accuracy: settled.length ? (correct / settled.length) * 100 : null,
+  };
+}
+
+function updatePredictionCohortControls(history) {
+  const allRows = predictionHistoryRows(history);
+  const preMatch = allRows.filter(row => predictionCohortForStatus(row.source_status) === 'pre_match');
+  const live = allRows.filter(row => predictionCohortForStatus(row.source_status) === 'live');
+  const preMetrics = predictionCohortMetrics(preMatch);
+  const liveMetrics = predictionCohortMetrics(live);
+  const preCount = document.getElementById('performance-cohort-prematch-count');
+  const liveCount = document.getElementById('performance-cohort-live-count');
+  if (preCount) preCount.textContent = `${preMetrics.settled}/${preMetrics.total} settled`;
+  if (liveCount) liveCount.textContent = `${liveMetrics.settled}/${liveMetrics.total} settled`;
+
+  const note = document.getElementById('performance-cohort-note');
+  if (!note) return;
+  const selected = activePredictionCohort === 'live' ? liveMetrics : preMetrics;
+  const label = activePredictionCohort === 'live' ? 'Live snapshots' : 'Pre-match predictions';
+  const resultText = selected.settled
+    ? `${selected.correct}/${selected.settled} settled correct (${selected.accuracy.toFixed(1)}%); ${selected.pending} pending.`
+    : `${selected.total} recorded; no settled outcomes yet.`;
+  note.textContent = activePredictionCohort === 'live'
+    ? `${label}: ${resultText} These records were first seen live, without live score or clock features; they are kept separate and excluded from pre-match learning.`
+    : `${label}: ${resultText} Only upcoming snapshots contribute to pre-match picker feedback.`;
+
+  renderPredictionOutcomeMetrics(activePredictionCohort === 'live' ? live : preMatch);
+}
+
+function renderPredictionOutcomeMetrics(rows) {
+  const host = document.getElementById('performance-outcome-metrics');
+  const sampleNote = document.getElementById('performance-class-sample');
+  if (!host) return;
+  const settled = rows.filter(row => ['home_win', 'draw', 'away_win'].includes(row.actual_outcome));
+  if (sampleNote) {
+    const label = activePredictionCohort === 'live' ? 'Live snapshots' : 'Pre-match picks';
+    sampleNote.textContent = `${label}: ${settled.length} settled of ${rows.length} recorded`;
+  }
+  host.replaceChildren();
+  const classes = [
+    { key: 'home_win', label: 'Home win' },
+    { key: 'draw', label: 'Draw' },
+    { key: 'away_win', label: 'Away win' },
+  ];
+  classes.forEach(({ key, label }) => {
+    const selected = rows.filter(row => row.predicted_outcome === key);
+    const selectedSettled = selected.filter(row => ['home_win', 'draw', 'away_win'].includes(row.actual_outcome));
+    const correct = selectedSettled.filter(row => row.actual_outcome === key).length;
+    const accuracy = selectedSettled.length ? `${(correct / selectedSettled.length * 100).toFixed(1)}%` : '—';
+    const actualCount = settled.filter(row => row.actual_outcome === key).length;
+
+    const card = document.createElement('article');
+    card.className = 'performance-outcome-card';
+    const heading = document.createElement('h4');
+    heading.textContent = label;
+    const picks = document.createElement('p');
+    picks.textContent = `Picks: ${selected.length} · settled: ${selectedSettled.length}`;
+    const result = document.createElement('p');
+    result.className = 'performance-outcome-accuracy';
+    result.textContent = `Correct: ${correct} / ${selectedSettled.length} · accuracy ${accuracy}`;
+    const observed = document.createElement('p');
+    observed.textContent = `Actual ${label.toLowerCase()} results in these settled picks: ${actualCount}`;
+    card.append(heading, picks, result, observed);
+    host.appendChild(card);
+  });
+}
+
+function filterPredictionHistoryByCohort(history, cohort) {
+  const filtered = {};
+  if (!history || typeof history !== 'object' || Array.isArray(history)) return filtered;
+  for (const [category, entries] of Object.entries(history)) {
+    filtered[category] = {};
+    if (!entries || typeof entries !== 'object' || Array.isArray(entries)) continue;
+    for (const [key, row] of Object.entries(entries)) {
+      if (row && typeof row === 'object' && predictionCohortForStatus(row.source_status) === cohort) {
+        filtered[category][key] = row;
+      }
+    }
+  }
+  return filtered;
+}
+
+function switchPerformanceCohort(cohort) {
+  activePredictionCohort = cohort === 'live' ? 'live' : 'pre_match';
+  const preButton = document.getElementById('performance-cohort-prematch');
+  const liveButton = document.getElementById('performance-cohort-live');
+  if (preButton) preButton.setAttribute('aria-selected', String(activePredictionCohort === 'pre_match'));
+  if (liveButton) liveButton.setAttribute('aria-selected', String(activePredictionCohort === 'live'));
+  if (activePerformanceDataset === 'real') getproducts_2_3(true, 'real');
+}
+
+function setDetailedRefreshFeedback(state, message, enabled) {
+  const button = document.getElementById('refreshBtn');
+  const status = document.getElementById('refresh-status');
+  const label = button && button.querySelector('.refresh-label');
+  const icon = button && button.querySelector('.refresh-icon');
+  const text = String(message || '');
+  if (status) status.textContent = text;
+  if (button) {
+    button.dataset.refreshState = state || 'ready';
+    button.setAttribute('aria-busy', String(state === 'loading'));
+    if (enabled !== undefined) button.disabled = !enabled;
+    if (label) {
+      label.textContent = state === 'loading' ? 'Refreshing…'
+        : state === 'success' ? 'Updated'
+        : state === 'error' ? 'Try again'
+        : 'Refresh data';
+    }
+    if (icon) icon.textContent = state === 'loading' ? '…' : state === 'success' ? '✓' : '↻';
+  }
+}
+
+async function refreshDetailedDataBoth() {
+  if (detailedRefreshInFlight) return;
+  const button = document.getElementById('refreshBtn');
+  const loader = document.getElementById('mainloader2');
+  const loaderState = document.getElementById('state_loader11');
+  const startedAt = Date.now();
+  detailedRefreshInFlight = true;
+  detailedRefreshCooldownUntil = startedAt + DETAILED_REFRESH_COOLDOWN_MS;
+  if (button) button.disabled = true;
+  if (loader) loader.classList.remove('hide');
+  if (loaderState) loaderState.textContent = 'Refreshing both real and simulated results…';
+  setDetailedRefreshFeedback('loading', 'Refreshing real and simulated results…', false);
+
+  const post = async message => {
+    const response = await fetch(line + '/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+      cache: 'no-store'
+    });
+    let payload = {};
+    try { payload = await response.json(); } catch (_) {}
+    if (!response.ok) {
+      const error = new Error(payload.message || `Refresh request failed (${response.status})`);
+      error.status = response.status;
+      error.retryAfter = Number(payload.retry_after) || 0;
+      throw error;
+    }
+    return payload;
+  };
+
+  try {
+    const [refreshResult, simulatedResult, realResult] = await Promise.allSettled([
+      post('refresh_detailed_data'),
+      post('analysis'),
+      post('real_analysis'),
+    ]);
+    const refreshed = {};
+    if (simulatedResult.status === 'fulfilled') refreshed.simulated = simulatedResult.value;
+    if (realResult.status === 'fulfilled') refreshed.real = realResult.value;
+    if (!refreshed[activePerformanceDataset]) {
+      const reason = activePerformanceDataset === 'real' ? realResult : simulatedResult;
+      throw reason.status === 'rejected' ? reason.reason : new Error('The selected results could not be refreshed.');
+    }
+    if (refreshResult.status === 'rejected' && Number(refreshResult.reason && refreshResult.reason.retryAfter) > 0) {
+      detailedRefreshCooldownUntil = Math.max(
+        detailedRefreshCooldownUntil,
+        Date.now() + Number(refreshResult.reason.retryAfter) * 1000,
+      );
+    }
+    window.__detailedPerformancePrefetch = refreshed;
+    await getproducts_2_3(false, activePerformanceDataset);
+    if (loader) loader.classList.add('hide');
+    if (loaderState) loaderState.textContent = 'Both result sets have been checked.';
+
+    const bothLoaded = simulatedResult.status === 'fulfilled' && realResult.status === 'fulfilled';
+    const updaterAccepted = refreshResult.status === 'fulfilled';
+    const suffix = bothLoaded
+      ? (updaterAccepted ? ' The updater has also been asked to check for new source data.' : ' Saved data refreshed; the updater request was rate-limited or could not be queued.')
+      : ' The other result set could not be reached; retry after a short wait.';
+    setDetailedRefreshFeedback('success', `Real and simulated data checked.${suffix}`, false);
+  } catch (error) {
+    if (loader) loader.classList.add('hide');
+    if (loaderState) loaderState.textContent = 'The detailed-data refresh did not complete.';
+    const wait = Math.max(DETAILED_REFRESH_COOLDOWN_MS, Number(error && error.retryAfter) * 1000 || 0);
+    detailedRefreshCooldownUntil = Math.max(detailedRefreshCooldownUntil, startedAt + wait);
+    setDetailedRefreshFeedback('error', error && error.message
+      ? error.message : 'Could not refresh detailed data. Check the connection and try again.', false);
+  } finally {
+    const remaining = Math.max(0, detailedRefreshCooldownUntil - Date.now());
+    if (detailedRefreshCooldownTimer) clearTimeout(detailedRefreshCooldownTimer);
+    detailedRefreshCooldownTimer = setTimeout(() => {
+      detailedRefreshInFlight = false;
+      detailedRefreshCooldownTimer = null;
+      if (button) button.disabled = false;
+      storeInfo('refresh', 'allow');
+      if (button) {
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+        button.classList.add('refresh-active');
+      }
+      const status = document.getElementById('refresh-status');
+      const successful = button && button.dataset.refreshState === 'success';
+      setDetailedRefreshFeedback(
+        successful ? 'ready' : 'error',
+        successful ? 'Both results were checked. You can refresh again.' : 'You can try refreshing again.',
+        true,
+      );
+      if (status) status.dataset.cooldownComplete = 'true';
+    }, remaining);
+  }
 }
 
 function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
   dataset = dataset === 'real' ? 'real' : 'simulated';
   activePerformanceDataset = dataset;
+  const refreshButtonAtStart = document.getElementById('refreshBtn');
+  if (update_ !== false && !detailedRefreshInFlight && refreshButtonAtStart && refreshButtonAtStart.dataset.refreshState === 'loading') {
+    storeInfo('refresh', 'allow');
+    refreshButtonAtStart.style.opacity = 1;
+    refreshButtonAtStart.style.cursor = 'pointer';
+    refreshButtonAtStart.classList.add('refresh-active');
+    setDetailedRefreshFeedback('ready', 'Refresh canceled because the selected results view changed. You can try again.', true);
+  }
   const requestVersion = ++performanceRequestVersion;
   ++performanceRenderEpoch;
   clearPerformanceAnimations();
@@ -3120,31 +4036,52 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
 
   // alert('fetching')
   storeInfo('late2', 'busy')
+  if (update_ === false) setDetailedRefreshFeedback('loading', 'Refreshing detailed data…', false);
   let ptagstate = document.getElementById('state_loader')
-  if (ptagstate) ptagstate.textContent = 'Fetching TechNify Data...'
+  if (ptagstate) ptagstate.textContent = update_ === false
+    ? 'Fetching saved prediction results…' : 'Loading saved prediction results…'
   let fdata__ = document.getElementById('fdata__')
   if (fdata__) fdata__.classList.remove('hide_bx')
-  fetch(line + '/products', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ message: dataset === 'real' ? 'real_analysis' : 'analysis' })
-  })
-    .then(response => {
+  const prefetch = window.__detailedPerformancePrefetch || {};
+  let dataRequest;
+  if (Object.prototype.hasOwnProperty.call(prefetch, dataset)) {
+    dataRequest = Promise.resolve(prefetch[dataset]);
+    delete prefetch[dataset];
+    if (!Object.keys(prefetch).length) delete window.__detailedPerformancePrefetch;
+  } else {
+    dataRequest = fetch(line + '/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: dataset === 'real' ? 'real_analysis' : 'analysis' }),
+      cache: 'no-store'
+    }).then(response => {
       if (!response.ok) throw new Error(`Performance request failed (${response.status})`);
+      return response.json();
+    });
+  }
+  return dataRequest
+    .then(data3 => {
+      if (requestVersion !== performanceRequestVersion || dataset !== activePerformanceDataset) return;
       let ldata = document.getElementById('ldata')
       if (ldata) ldata.classList.remove('hide_bx')
       let ptagstate2 = document.getElementById('state_loader')
-      if (ptagstate2) ptagstate2.textContent = 'Loading Data...'
+      if (ptagstate2) ptagstate2.textContent = 'Preparing accuracy summaries and charts…'
       let fdata__2 = document.getElementById('fdata__')
       if (fdata__2) fdata__2.classList.add('checked')
 
 
-      return response.json()
-    })
-    .then(data3 => {
-      if (requestVersion !== performanceRequestVersion || dataset !== activePerformanceDataset) return;
+      updatePickerModelBadge(data3 && data3.picker_model);
+      const simulationStatus = data3 && data3.simulation_status && typeof data3.simulation_status === 'object'
+        ? data3.simulation_status : {};
+      if (dataset === 'simulated') {
+        displayedSimulationSignature = String(simulationStatus.last_completed_signature || '');
+        if (['running', 'queued'].includes(String(simulationStatus.status || '').toLowerCase())) {
+          pollSimulationBuildStatus();
+        }
+      } else if (simulationStatusPollTimer) {
+        clearTimeout(simulationStatusPollTimer);
+        simulationStatusPollTimer = null;
+      }
       const renderEpoch = ++performanceRenderEpoch;
       clearPerformanceAnimations();
       document.getElementById('performance-empty-state')?.remove();
@@ -3152,12 +4089,24 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
       if (!sourceTbody) throw new Error('Performance table is missing from the page');
       let data = dedupeOutcomeHistory(data3 && data3.message);
       if (!data || typeof data !== 'object') data = {};
+      if (dataset === 'real') {
+        updatePredictionCohortControls(data);
+        data = filterPredictionHistoryByCohort(data, activePredictionCohort);
+      } else {
+        const classPanel = document.getElementById('performance-class-panel');
+        if (classPanel) classPanel.hidden = true;
+      }
       analysis3(data)
       let histdata_=data
  
 
 
       storeInfo('late2', 'done')
+      if (update_ === false) {
+        setDetailedRefreshFeedback('success', 'Detailed data refreshed successfully.', false);
+        const loaderState = document.getElementById('state_loader11');
+        if (loaderState) loaderState.textContent = 'Detailed data refreshed successfully.';
+      }
 
 
 
@@ -3179,6 +4128,19 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
 
       // --- Summary Calculations ---
       const totalMatches = Math.floor(allMatches.length);
+      if (!totalMatches) {
+        const host = document.querySelector('.htables');
+        if (host) {
+          const emptyState = document.getElementById('performance-empty-state') || document.createElement('div');
+          emptyState.id = 'performance-empty-state';
+          emptyState.className = 'performance-empty-state';
+          emptyState.setAttribute('role', 'status');
+          emptyState.textContent = dataset === 'simulated'
+            ? simulationEmptyMessage(simulationStatus)
+            : 'No real-life predictions are recorded yet. Eligible predictions will appear after they are saved.';
+          if (!emptyState.parentElement) host.appendChild(emptyState);
+        }
+      }
       const settledMatches = allMatches.filter(match => {
         const actual = String(match && match['actual results'] || '').trim();
         return actual && !/^(pending|missing|unknown|n\/a|—|-|none)$/i.test(actual);
@@ -3187,8 +4149,8 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
       const performanceNote = document.getElementById('performance-mode-note');
       if (performanceNote && dataset === 'real') {
         performanceNote.textContent = totalMatches
-          ? `${pendingCount} pending; accuracy uses settled predictions only.`
-          : 'No real-life predictions are recorded yet; new eligible predictions will be saved automatically.';
+          ? `${pendingCount} pending in the selected cohort; accuracy uses settled predictions only.`
+          : `No ${activePredictionCohort === 'live' ? 'live-snapshot' : 'pre-match'} predictions in this cohort yet.`;
       }
       const correctCount = settledMatches.filter(outcomeIsCorrect).length;
       const sourceProbabilityValues = allMatches
@@ -3204,7 +4166,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
       //remove the loader
 
       try{let ptagstate3 = document.getElementById('state_loader')
-      ptagstate3.textContent = 'Are you TechNifyied?'
+      ptagstate3.textContent = 'Detailed prediction results are up to date.'
       let ldata2 = document.getElementById('ldata')
       ldata2.classList.add('checked')}catch{}
       try{
@@ -3363,6 +4325,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
 
         }
    setTimeout(()=>{
+    if (update_ === false) return;
     if (requestVersion !== performanceRequestVersion || dataset !== activePerformanceDataset) return;
 
     let refreshBtn2=document.getElementById('refreshBtn')
@@ -3371,6 +4334,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
             refreshBtn2.style.opacity=1
              refreshBtn2.style.cursor="pointer"
             refreshBtn2.classList.add('refresh-active')
+            if (update_ === false) setDetailedRefreshFeedback('ready', 'Detailed data is current. You can refresh again.', true)
 
             
           }
@@ -3406,6 +4370,13 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
        
       
       storeInfo('late2', 'failed')
+      if (update_ === false) {
+        setDetailedRefreshFeedback('error', 'Could not refresh detailed data. Check the connection and try again.', false)
+        const loaderState = document.getElementById('state_loader11')
+        if (loaderState) loaderState.textContent = 'The detailed-data request failed. You can retry shortly.'
+        const pageState = document.getElementById('state_loader')
+        if (pageState) pageState.textContent = 'Detailed data could not be refreshed.'
+      }
  let dtt= document.getElementById('histecc')
         let lod2= document.getElementById('mainloader2')
         if (lod2 && dtt){
@@ -3414,6 +4385,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
 
         }
          setTimeout(()=>{
+    if (update_ === false) return;
     if (requestVersion !== performanceRequestVersion || dataset !== activePerformanceDataset) return;
 
     let refreshBtn2=document.getElementById('refreshBtn')
@@ -3422,6 +4394,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
             refreshBtn2.style.opacity=1
              refreshBtn2.style.cursor="pointer"
             refreshBtn2.classList.add('refresh-active')
+            if (update_ === false) setDetailedRefreshFeedback('error', 'Could not refresh detailed data. Check the connection and try again.', true)
 
             
           }
@@ -3431,6 +4404,7 @@ function getproducts_2_3(update_=true, dataset=activePerformanceDataset) {
 
 
       // console.log('failed to recieve data:' + error)
+      if (update_ === false) throw error;
 
     });
 }
@@ -3544,6 +4518,7 @@ function sort_tables() {
   const dataset = activePerformanceDataset === 'real' ? 'real' : 'simulated';
   const summaryKey = dataset === 'real' ? 'realMatchSummary' : 'matchSummary';
   const selection = performanceOutcomeSelection[dataset];
+  if (!selection.pages) selection.pages = {};
   const sourceTable = document.getElementById('match-table-source');
   const originalTbody = document.getElementById('match-table');
   if (!sourceTable || !originalTbody || !sourceTable.parentElement) return;
@@ -3613,9 +4588,38 @@ function sort_tables() {
     const thead = originalThead.cloneNode(true);
     const tbody = document.createElement('tbody');
     tbody.className = originalTbody.className;
-    if (tableRows.length) {
-      tableRows.forEach(row => tbody.appendChild(row));
-    } else {
+    const table = document.createElement('table');
+    table.className = sourceTable.className;
+    table.append(thead, tbody);
+    const tableScroll = document.createElement('div');
+    tableScroll.className = 'outcome-table-scroll';
+    tableScroll.appendChild(table);
+
+    const pageSize = 25;
+    const totalPages = Math.max(1, Math.ceil(tableRows.length / pageSize));
+    let page = Number(selection.pages[label]);
+    if (!Number.isInteger(page) || page < 0) page = 0;
+    page = Math.min(page, totalPages - 1);
+
+    const pagination = document.createElement('nav');
+    pagination.className = 'outcome-pagination';
+    pagination.setAttribute('aria-label', `${label} table pages`);
+    pagination.hidden = tableRows.length <= pageSize;
+    const summary = document.createElement('span');
+    summary.className = 'outcome-pagination-summary';
+    summary.setAttribute('aria-live', 'polite');
+    const previous = document.createElement('button');
+    previous.type = 'button';
+    previous.className = 'outcome-page-button';
+    previous.textContent = 'Previous';
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'outcome-page-button';
+    next.textContent = 'Next';
+
+    function renderPage() {
+      tbody.replaceChildren();
+      if (!tableRows.length) {
       const row = document.createElement('tr');
       const cell = document.createElement('td');
       cell.colSpan = 6;
@@ -3623,11 +4627,33 @@ function sort_tables() {
       cell.textContent = `No ${label.toLowerCase()} recorded.`;
       row.appendChild(cell);
       tbody.appendChild(row);
+      } else {
+        const start = page * pageSize;
+        tableRows.slice(start, start + pageSize).forEach(row => tbody.appendChild(row));
+        selection.pages[label] = page;
+        const first = start + 1;
+        const last = Math.min(start + pageSize, tableRows.length);
+        summary.textContent = `Showing ${first}–${last} of ${tableRows.length} · Page ${page + 1} of ${totalPages}`;
+      }
+      previous.disabled = page <= 0;
+      next.disabled = page >= totalPages - 1;
     }
-    const table = document.createElement('table');
-    table.className = sourceTable.className;
-    table.append(thead, tbody);
-    return table;
+    previous.addEventListener('click', () => {
+      if (page <= 0) return;
+      page -= 1;
+      renderPage();
+    });
+    next.addEventListener('click', () => {
+      if (page >= totalPages - 1) return;
+      page += 1;
+      renderPage();
+    });
+    pagination.append(previous, summary, next);
+    renderPage();
+    const tableRegion = document.createElement('div');
+    tableRegion.className = 'outcome-table-region';
+    tableRegion.append(tableScroll, pagination);
+    return tableRegion;
   }
 
   function buildOutcomeGroup(groupKey, label, options) {
